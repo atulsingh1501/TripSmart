@@ -1,0 +1,1375 @@
+﻿{
+    "id":  "6d953043-e700-4ef9-9b1b-54ffe5288c5e",
+    "source":  {
+                   "id":  "DEL",
+                   "code":  "DEL",
+                   "name":  "Delhi",
+                   "fullName":  "New Delhi",
+                   "state":  "Delhi",
+                   "type":  "metro",
+                   "coordinates":  {
+                                       "lat":  28.6139,
+                                       "lng":  77.209
+                                   },
+                   "timezone":  "Asia/Kolkata",
+                   "description":  "Capital city of India with rich Mughal heritage, modern infrastructure, and vibrant culture",
+                   "popularFor":  [
+                                      "Historical Monuments",
+                                      "Street Food",
+                                      "Shopping",
+                                      "Culture",
+                                      "Nightlife"
+                                  ],
+                   "bestTimeToVisit":  {
+                                           "months":  [
+                                                          "Oct",
+                                                          "Nov",
+                                                          "Dec",
+                                                          "Jan",
+                                                          "Feb",
+                                                          "Mar"
+                                                      ],
+                                           "season":  "Winter"
+                                       },
+                   "weather":  {
+                                   "summer":  "25-45°C",
+                                   "winter":  "5-20°C",
+                                   "monsoon":  "25-35°C"
+                               },
+                   "averageDailyBudget":  {
+                                              "budget":  1500,
+                                              "midRange":  3500,
+                                              "luxury":  8000
+                                          },
+                   "transport":  {
+                                     "hasAirport":  true,
+                                     "airportCode":  "DEL",
+                                     "airportName":  "Indira Gandhi International Airport",
+                                     "hasRailway":  true,
+                                     "railwayStations":  [
+                                                             "New Delhi",
+                                                             "Old Delhi",
+                                                             "Hazrat Nizamuddin",
+                                                             "Anand Vihar"
+                                                         ],
+                                     "hasBusTerminal":  true,
+                                     "hasMetro":  true
+                                 },
+                   "attractions":  [
+                                       {
+                                           "name":  "Red Fort",
+                                           "type":  "Monument",
+                                           "entryFee":  35,
+                                           "duration":  "2-3 hours"
+                                       },
+                                       {
+                                           "name":  "Qutub Minar",
+                                           "type":  "Monument",
+                                           "entryFee":  35,
+                                           "duration":  "1-2 hours"
+                                       },
+                                       {
+                                           "name":  "India Gate",
+                                           "type":  "Monument",
+                                           "entryFee":  0,
+                                           "duration":  "1 hour"
+                                       },
+                                       {
+                                           "name":  "Humayun\u0027s Tomb",
+                                           "type":  "Monument",
+                                           "entryFee":  35,
+                                           "duration":  "1-2 hours"
+                                       },
+                                       {
+                                           "name":  "Lotus Temple",
+                                           "type":  "Religious",
+                                           "entryFee":  0,
+                                           "duration":  "1 hour"
+                                       },
+                                       {
+                                           "name":  "Chandni Chowk",
+                                           "type":  "Market",
+                                           "entryFee":  0,
+                                           "duration":  "3-4 hours"
+                                       }
+                                   ],
+                   "imageUrl":  "/images/cities/delhi.jpg"
+               },
+    "destination":  {
+                        "id":  "BLR",
+                        "code":  "BLR",
+                        "name":  "Bangalore",
+                        "fullName":  "Bengaluru",
+                        "state":  "Karnataka",
+                        "type":  "metro",
+                        "coordinates":  {
+                                            "lat":  12.9716,
+                                            "lng":  77.5946
+                                        },
+                        "timezone":  "Asia/Kolkata",
+                        "description":  "IT hub of India with pleasant weather year-round, gardens, and vibrant nightlife",
+                        "popularFor":  [
+                                           "IT Parks",
+                                           "Pubs \u0026 Breweries",
+                                           "Gardens",
+                                           "Pleasant Weather",
+                                           "Startups"
+                                       ],
+                        "bestTimeToVisit":  {
+                                                "months":  [
+                                                               "Jan",
+                                                               "Feb",
+                                                               "Mar",
+                                                               "Apr",
+                                                               "Sep",
+                                                               "Oct",
+                                                               "Nov",
+                                                               "Dec"
+                                                           ],
+                                                "season":  "Year-round"
+                                            },
+                        "weather":  {
+                                        "summer":  "20-35°C",
+                                        "winter":  "15-27°C",
+                                        "monsoon":  "18-28°C"
+                                    },
+                        "averageDailyBudget":  {
+                                                   "budget":  1500,
+                                                   "midRange":  3500,
+                                                   "luxury":  8000
+                                               },
+                        "transport":  {
+                                          "hasAirport":  true,
+                                          "airportCode":  "BLR",
+                                          "airportName":  "Kempegowda International Airport",
+                                          "hasRailway":  true,
+                                          "railwayStations":  [
+                                                                  "Bangalore City",
+                                                                  "Yesvantpur",
+                                                                  "Krishnarajapuram"
+                                                              ],
+                                          "hasBusTerminal":  true,
+                                          "hasMetro":  true
+                                      },
+                        "attractions":  [
+                                            {
+                                                "name":  "Lalbagh Botanical Garden",
+                                                "type":  "Garden",
+                                                "entryFee":  25,
+                                                "duration":  "2-3 hours"
+                                            },
+                                            {
+                                                "name":  "Cubbon Park",
+                                                "type":  "Garden",
+                                                "entryFee":  0,
+                                                "duration":  "2 hours"
+                                            },
+                                            {
+                                                "name":  "Bangalore Palace",
+                                                "type":  "Palace",
+                                                "entryFee":  230,
+                                                "duration":  "2 hours"
+                                            },
+                                            {
+                                                "name":  "ISKCON Temple",
+                                                "type":  "Religious",
+                                                "entryFee":  0,
+                                                "duration":  "1-2 hours"
+                                            }
+                                        ],
+                        "imageUrl":  "/images/cities/bangalore.jpg"
+                    },
+    "startDate":  "2026-02-07",
+    "endDate":  "2026-02-12",
+    "nights":  5,
+    "adjustedNights":  4,
+    "travelers":  1,
+    "tripType":  "tour",
+    "isReturnTrip":  true,
+    "includeActivities":  true,
+    "plans":  [
+                  {
+                      "id":  "e01ddbae-bbc9-41c0-a86e-0662ee0a92e1",
+                      "tier":  "Budget",
+                      "description":  "Best-value Plan",
+                      "nights":  4,
+                      "requestedNights":  5,
+                      "arrivalInfo":  {
+                                          "isNextDayArrival":  true,
+                                          "departureTime":  "23:50",
+                                          "arrivalTime":  "19:45",
+                                          "arrivalDate":  "2026-02-09"
+                                      },
+                      "transport":  {
+                                        "type":  "train",
+                                        "mode":  "train",
+                                        "class":  "2A",
+                                        "name":  "YNRK YPR EXP SPL (2A)",
+                                        "cost":  7470,
+                                        "details":  {
+                                                        "trainNumber":  "06598",
+                                                        "departure":  "23:50",
+                                                        "arrival":  "19:45",
+                                                        "duration":  {
+                                                                         "hours":  43,
+                                                                         "minutes":  55,
+                                                                         "totalMinutes":  2635
+                                                                     },
+                                                        "trainType":  "SPL"
+                                                    }
+                                    },
+                      "localTransport":  null,
+                      "hotel":  {
+                                    "name":  "JW Marriott Hotel Bengaluru",
+                                    "stars":  4,
+                                    "pricePerNight":  7709,
+                                    "totalCost":  38545,
+                                    "nights":  4,
+                                    "details":  {
+                                                    "location":  "Bangalore Shopping Area, Bangalore",
+                                                    "amenities":  [
+                                                                      "Free WiFi",
+                                                                      "Swimming Pool",
+                                                                      "Fitness Center",
+                                                                      "Restaurant",
+                                                                      "Room Service",
+                                                                      "Parking",
+                                                                      "Business Center",
+                                                                      "Laundry"
+                                                                  ],
+                                                    "roomType":  "Standard Room"
+                                                }
+                                },
+                      "costs":  {
+                                    "transport":  7470,
+                                    "localTransport":  0,
+                                    "accommodation":  38545,
+                                    "activities":  2000,
+                                    "meals":  1980,
+                                    "miscellaneous":  0,
+                                    "total":  49995
+                                },
+                      "highlights":  [
+                                         "Score: 86",
+                                         "₹49,995 total",
+                                         "YNRK YPR EXP SPL (2A)",
+                                         "JW Marriott Hotel Bengaluru"
+                                     ]
+                  },
+                  {
+                      "id":  "730ba827-2c66-4044-bd13-5fe0a68f5f96",
+                      "tier":  "Comfort",
+                      "description":  "Budget-saver Plan",
+                      "nights":  4,
+                      "requestedNights":  5,
+                      "arrivalInfo":  {
+                                          "isNextDayArrival":  true,
+                                          "departureTime":  "22:30",
+                                          "arrivalTime":  "01:15",
+                                          "arrivalDate":  "2026-02-07"
+                                      },
+                      "transport":  {
+                                        "type":  "flight",
+                                        "mode":  "flight",
+                                        "class":  "economy",
+                                        "name":  "IndiGo 6E709",
+                                        "cost":  16100,
+                                        "details":  {
+                                                        "airline":  "IndiGo",
+                                                        "departure":  "22:30",
+                                                        "arrival":  "01:15",
+                                                        "duration":  "2h 45m",
+                                                        "stops":  0
+                                                    }
+                                    },
+                      "localTransport":  null,
+                      "hotel":  {
+                                    "name":  "Hyatt Centric MG Road Bangalore",
+                                    "stars":  3,
+                                    "pricePerNight":  2988,
+                                    "totalCost":  14940,
+                                    "nights":  4,
+                                    "details":  {
+                                                    "location":  "Ulsoor, Bangalore",
+                                                    "amenities":  [
+                                                                      "Free WiFi",
+                                                                      "Restaurant",
+                                                                      "Room Service",
+                                                                      "Parking",
+                                                                      "Laundry"
+                                                                  ],
+                                                    "roomType":  "Standard Room"
+                                                }
+                                },
+                      "costs":  {
+                                    "transport":  16100,
+                                    "localTransport":  0,
+                                    "accommodation":  14940,
+                                    "activities":  2000,
+                                    "meals":  1980,
+                                    "miscellaneous":  0,
+                                    "total":  35020
+                                },
+                      "highlights":  [
+                                         "Score: 51",
+                                         "₹35,020 total",
+                                         "IndiGo 6E709",
+                                         "Hyatt Centric MG Road Bangalore"
+                                     ]
+                  },
+                  {
+                      "id":  "a587495d-2c68-4a29-a6b0-7b1504e63323",
+                      "tier":  "Premium",
+                      "description":  "Balanced-choice Plan",
+                      "nights":  4,
+                      "requestedNights":  5,
+                      "arrivalInfo":  {
+                                          "isNextDayArrival":  true,
+                                          "departureTime":  "23:50",
+                                          "arrivalTime":  "19:45",
+                                          "arrivalDate":  "2026-02-09"
+                                      },
+                      "transport":  {
+                                        "type":  "train",
+                                        "mode":  "train",
+                                        "class":  "2A",
+                                        "name":  "YNRK YPR EXP SPL (2A)",
+                                        "cost":  7470,
+                                        "details":  {
+                                                        "trainNumber":  "06598",
+                                                        "departure":  "23:50",
+                                                        "arrival":  "19:45",
+                                                        "duration":  {
+                                                                         "hours":  43,
+                                                                         "minutes":  55,
+                                                                         "totalMinutes":  2635
+                                                                     },
+                                                        "trainType":  "SPL"
+                                                    }
+                                    },
+                      "localTransport":  null,
+                      "hotel":  {
+                                    "name":  "Radisson Blu Atria Bengaluru",
+                                    "stars":  4,
+                                    "pricePerNight":  6114,
+                                    "totalCost":  30570,
+                                    "nights":  4,
+                                    "details":  {
+                                                    "location":  "Bangalore",
+                                                    "amenities":  [
+                                                                      "Free WiFi",
+                                                                      "Swimming Pool",
+                                                                      "Fitness Center",
+                                                                      "Restaurant",
+                                                                      "Room Service",
+                                                                      "Parking",
+                                                                      "Business Center",
+                                                                      "Laundry"
+                                                                  ],
+                                                    "roomType":  "Standard Room"
+                                                }
+                                },
+                      "costs":  {
+                                    "transport":  7470,
+                                    "localTransport":  0,
+                                    "accommodation":  30570,
+                                    "activities":  2650,
+                                    "meals":  1980,
+                                    "miscellaneous":  0,
+                                    "total":  42670
+                                },
+                      "highlights":  [
+                                         "Score: 81",
+                                         "₹42,670 total",
+                                         "YNRK YPR EXP SPL (2A)",
+                                         "Radisson Blu Atria Bengaluru"
+                                     ]
+                  },
+                  {
+                      "id":  "76076b1b-2f8e-4a31-a283-1c65a92a2706",
+                      "tier":  "Budget",
+                      "score":  0.82,
+                      "badge":  {
+                                    "text":  "Best Match",
+                                    "color":  "bg-green-500"
+                                },
+                      "description":  "Best value for money with comfortable travel and stay",
+                      "transport":  {
+                                        "type":  "flight",
+                                        "details":  {
+                                                        "id":  "SG889-2026-02-07",
+                                                        "flightNumber":  "SG889",
+                                                        "airline":  {
+                                                                        "code":  "SG",
+                                                                        "name":  "SpiceJet",
+                                                                        "logo":  "/airlines/spicejet.png",
+                                                                        "type":  "low-cost"
+                                                                    },
+                                                        "from":  "DEL",
+                                                        "to":  "BLR",
+                                                        "date":  "2026-02-07",
+                                                        "departure":  {
+                                                                          "time":  "06:30",
+                                                                          "terminal":  "T2"
+                                                                      },
+                                                        "arrival":  {
+                                                                        "time":  "09:17",
+                                                                        "terminal":  "T2",
+                                                                        "nextDay":  false
+                                                                    },
+                                                        "duration":  "2h 47m",
+                                                        "durationMinutes":  167,
+                                                        "stops":  0,
+                                                        "prices":  {
+                                                                       "economy":  {
+                                                                                       "base":  5662,
+                                                                                       "taxes":  1019,
+                                                                                       "total":  6681
+                                                                                   },
+                                                                       "business":  {
+                                                                                        "base":  16560,
+                                                                                        "taxes":  2981,
+                                                                                        "total":  19541
+                                                                                    }
+                                                                   },
+                                                        "seatsAvailable":  {
+                                                                               "economy":  6,
+                                                                               "business":  9
+                                                                           },
+                                                        "amenities":  [
+                                                                          "Snacks Available",
+                                                                          "Web Check-in"
+                                                                      ],
+                                                        "baggage":  {
+                                                                        "cabin":  "7 kg",
+                                                                        "checkIn":  "15 kg"
+                                                                    },
+                                                        "refundable":  false
+                                                    },
+                                        "cost":  13362
+                                    },
+                      "localTransport":  {
+                                             "type":  "Auto Rickshaw",
+                                             "totalFare":  3240,
+                                             "ratePerKm":  18,
+                                             "notes":  "3-seater auto, meter rates may vary"
+                                         },
+                      "hotel":  {
+                                    "name":  "BNGV Mystic Premier Hotel",
+                                    "stars":  2,
+                                    "location":  "Koramangala, Bangalore",
+                                    "pricePerNight":  2030,
+                                    "roomType":  "Standard Room",
+                                    "amenities":  [
+                                                      "Free WiFi",
+                                                      "Housekeeping",
+                                                      "TV"
+                                                  ]
+                                },
+                      "costs":  {
+                                    "transport":  13362,
+                                    "localTransport":  3240,
+                                    "accommodation":  10150,
+                                    "activities":  255,
+                                    "meals":  750,
+                                    "miscellaneous":  1176,
+                                    "total":  28933
+                                },
+                      "mealPlan":  {
+                                       "tier":  "expensive",
+                                       "meals":  [
+                                                     {
+                                                         "type":  "breakfast",
+                                                         "estimatedCost":  250,
+                                                         "tier":  "expensive"
+                                                     },
+                                                     {
+                                                         "type":  "lunch",
+                                                         "estimatedCost":  250,
+                                                         "tier":  "expensive"
+                                                     },
+                                                     {
+                                                         "type":  "dinner",
+                                                         "estimatedCost":  250,
+                                                         "tier":  "expensive"
+                                                     }
+                                                 ],
+                                       "avgCostPerMeal":  250
+                                   },
+                      "budgetAllocation":  {
+                                               "transport":  17500,
+                                               "accommodation":  26250,
+                                               "food":  13500,
+                                               "activities":  9000,
+                                               "buffer":  2500
+                                           },
+                      "highlights":  [
+                                         "5 nights stay at BNGV Mystic Premier Hotel",
+                                         "Flight tickets included",
+                                         "Local travel by Auto Rickshaw",
+                                         "Basic sightseeing covered",
+                                         "Meals: expensive tier"
+                                     ]
+                  },
+                  {
+                      "id":  "f2296e21-4b78-4083-92e4-1e645162a8db",
+                      "tier":  "Comfort",
+                      "description":  "Balance of comfort and value with quality experiences",
+                      "transport":  {
+                                        "type":  "flight",
+                                        "details":  {
+                                                        "id":  "SG889-2026-02-07",
+                                                        "flightNumber":  "SG889",
+                                                        "airline":  {
+                                                                        "code":  "SG",
+                                                                        "name":  "SpiceJet",
+                                                                        "logo":  "/airlines/spicejet.png",
+                                                                        "type":  "low-cost"
+                                                                    },
+                                                        "from":  "DEL",
+                                                        "to":  "BLR",
+                                                        "date":  "2026-02-07",
+                                                        "departure":  {
+                                                                          "time":  "06:30",
+                                                                          "terminal":  "T2"
+                                                                      },
+                                                        "arrival":  {
+                                                                        "time":  "09:17",
+                                                                        "terminal":  "T2",
+                                                                        "nextDay":  false
+                                                                    },
+                                                        "duration":  "2h 47m",
+                                                        "durationMinutes":  167,
+                                                        "stops":  0,
+                                                        "prices":  {
+                                                                       "economy":  {
+                                                                                       "base":  5662,
+                                                                                       "taxes":  1019,
+                                                                                       "total":  6681
+                                                                                   },
+                                                                       "business":  {
+                                                                                        "base":  16560,
+                                                                                        "taxes":  2981,
+                                                                                        "total":  19541
+                                                                                    }
+                                                                   },
+                                                        "seatsAvailable":  {
+                                                                               "economy":  6,
+                                                                               "business":  9
+                                                                           },
+                                                        "amenities":  [
+                                                                          "Snacks Available",
+                                                                          "Web Check-in"
+                                                                      ],
+                                                        "baggage":  {
+                                                                        "cabin":  "7 kg",
+                                                                        "checkIn":  "15 kg"
+                                                                    },
+                                                        "refundable":  false
+                                                    },
+                                        "cost":  13362
+                                    },
+                      "localTransport":  {
+                                             "type":  "Car Rental",
+                                             "carType":  "hatchback",
+                                             "totalFare":  10500,
+                                             "ratePerKm":  12,
+                                             "notes":  "80km/day included, driver with car, fuel included"
+                                         },
+                      "hotel":  {
+                                    "name":  "Shangri-La Bengaluru",
+                                    "stars":  4,
+                                    "location":  "Bangalore",
+                                    "pricePerNight":  7110,
+                                    "roomType":  "Superior Room",
+                                    "amenities":  [
+                                                      "Free WiFi",
+                                                      "Swimming Pool",
+                                                      "Fitness Center",
+                                                      "Restaurant",
+                                                      "Room Service",
+                                                      "Parking",
+                                                      "Business Center"
+                                                  ]
+                                },
+                      "costs":  {
+                                    "transport":  13362,
+                                    "localTransport":  10500,
+                                    "accommodation":  35550,
+                                    "activities":  306,
+                                    "meals":  2700,
+                                    "miscellaneous":  2446,
+                                    "total":  64864
+                                },
+                      "highlights":  [
+                                         "5 nights at 4-star Shangri-La Bengaluru",
+                                         "Round-trip flights included",
+                                         "Private hatchback with driver",
+                                         "Guided tours and activities",
+                                         "Breakfast included"
+                                     ]
+                  },
+                  {
+                      "id":  "b1212fb0-6c29-4fd5-93d4-8ff3a5331f38",
+                      "tier":  "Premium",
+                      "description":  "Luxury travel with premium accommodations and exclusive experiences",
+                      "transport":  {
+                                        "type":  "flight",
+                                        "details":  {
+                                                        "id":  "SG889-2026-02-07",
+                                                        "flightNumber":  "SG889",
+                                                        "airline":  {
+                                                                        "code":  "SG",
+                                                                        "name":  "SpiceJet",
+                                                                        "logo":  "/airlines/spicejet.png",
+                                                                        "type":  "low-cost"
+                                                                    },
+                                                        "from":  "DEL",
+                                                        "to":  "BLR",
+                                                        "date":  "2026-02-07",
+                                                        "departure":  {
+                                                                          "time":  "06:30",
+                                                                          "terminal":  "T2"
+                                                                      },
+                                                        "arrival":  {
+                                                                        "time":  "09:17",
+                                                                        "terminal":  "T2",
+                                                                        "nextDay":  false
+                                                                    },
+                                                        "duration":  "2h 47m",
+                                                        "durationMinutes":  167,
+                                                        "stops":  0,
+                                                        "prices":  {
+                                                                       "economy":  {
+                                                                                       "base":  5662,
+                                                                                       "taxes":  1019,
+                                                                                       "total":  6681
+                                                                                   },
+                                                                       "business":  {
+                                                                                        "base":  16560,
+                                                                                        "taxes":  2981,
+                                                                                        "total":  19541
+                                                                                    }
+                                                                   },
+                                                        "seatsAvailable":  {
+                                                                               "economy":  6,
+                                                                               "business":  9
+                                                                           },
+                                                        "amenities":  [
+                                                                          "Snacks Available",
+                                                                          "Web Check-in"
+                                                                      ],
+                                                        "baggage":  {
+                                                                        "cabin":  "7 kg",
+                                                                        "checkIn":  "15 kg"
+                                                                    },
+                                                        "refundable":  false
+                                                    },
+                                        "cost":  13362
+                                    },
+                      "localTransport":  {
+                                             "type":  "Car Rental",
+                                             "carType":  "luxury",
+                                             "totalFare":  37500,
+                                             "ratePerKm":  35,
+                                             "carOptions":  [
+                                                                "Toyota Camry",
+                                                                "BMW 3 Series",
+                                                                "Mercedes C-Class"
+                                                            ],
+                                             "notes":  "80km/day included, driver with car, fuel included"
+                                         },
+                      "hotel":  {
+                                    "name":  "The Oberoi Bengaluru",
+                                    "stars":  5,
+                                    "location":  "MG Road, Bangalore",
+                                    "pricePerNight":  50990,
+                                    "roomType":  "Deluxe Room",
+                                    "amenities":  [
+                                                      "Free WiFi",
+                                                      "Swimming Pool",
+                                                      "Fitness Center",
+                                                      "Restaurant",
+                                                      "Room Service",
+                                                      "Parking",
+                                                      "Business Center",
+                                                      "Laundry"
+                                                  ]
+                                },
+                      "costs":  {
+                                    "transport":  17371,
+                                    "localTransport":  37500,
+                                    "accommodation":  254950,
+                                    "activities":  510,
+                                    "meals":  5400,
+                                    "miscellaneous":  13616,
+                                    "total":  329347
+                                },
+                      "highlights":  [
+                                         "5 nights at 5-star The Oberoi Bengaluru",
+                                         "Business class flights",
+                                         "Luxury luxury with chauffeur",
+                                         "Private tours and premium experiences",
+                                         "All meals included",
+                                         "Airport transfers",
+                                         "Spa and wellness access"
+                                     ]
+                  }
+              ],
+    "algorithmPlans":  [
+                           {
+                               "tier":  "best-value",
+                               "name":  "Best-value Plan",
+                               "totalCost":  49995,
+                               "score":  86,
+                               "breakdown":  {
+                                                 "transportTotal":  7470,
+                                                 "accommodationTotal":  38545,
+                                                 "foodTotal":  1980,
+                                                 "activityTotal":  2000,
+                                                 "activitiesIncluded":  true
+                                             },
+                               "nights":  4,
+                               "requestedNights":  5,
+                               "arrivalInfo":  {
+                                                   "isNextDayArrival":  true,
+                                                   "departureTime":  "23:50",
+                                                   "arrivalTime":  "19:45",
+                                                   "arrivalDate":  "2026-02-09"
+                                               },
+                               "transport":  {
+                                                 "type":  "train",
+                                                 "mode":  "train",
+                                                 "class":  "2A",
+                                                 "name":  "YNRK YPR EXP SPL (2A)",
+                                                 "cost":  7470,
+                                                 "details":  {
+                                                                 "trainNumber":  "06598",
+                                                                 "departure":  "23:50",
+                                                                 "arrival":  "19:45",
+                                                                 "duration":  {
+                                                                                  "hours":  43,
+                                                                                  "minutes":  55,
+                                                                                  "totalMinutes":  2635
+                                                                              },
+                                                                 "trainType":  "SPL"
+                                                             }
+                                             },
+                               "accommodation":  {
+                                                     "name":  "JW Marriott Hotel Bengaluru",
+                                                     "stars":  4,
+                                                     "pricePerNight":  7709,
+                                                     "totalCost":  38545,
+                                                     "nights":  4,
+                                                     "details":  {
+                                                                     "location":  "Bangalore Shopping Area, Bangalore",
+                                                                     "amenities":  [
+                                                                                       "Free WiFi",
+                                                                                       "Swimming Pool",
+                                                                                       "Fitness Center",
+                                                                                       "Restaurant",
+                                                                                       "Room Service",
+                                                                                       "Parking",
+                                                                                       "Business Center",
+                                                                                       "Laundry"
+                                                                                   ],
+                                                                     "roomType":  "Standard Room"
+                                                                 }
+                                                 },
+                               "meals":  {
+                                             "tier":  "medium",
+                                             "dailyCost":  110,
+                                             "totalCost":  1980
+                                         },
+                               "activities":  {
+                                                  "tier":  "attraction",
+                                                  "dailyCost":  100,
+                                                  "totalCost":  2000
+                                              }
+                           },
+                           {
+                               "tier":  "budget-saver",
+                               "name":  "Budget-saver Plan",
+                               "totalCost":  35020,
+                               "score":  51,
+                               "breakdown":  {
+                                                 "transportTotal":  16100,
+                                                 "accommodationTotal":  14940,
+                                                 "foodTotal":  1980,
+                                                 "activityTotal":  2000,
+                                                 "activitiesIncluded":  true
+                                             },
+                               "nights":  4,
+                               "requestedNights":  5,
+                               "arrivalInfo":  {
+                                                   "isNextDayArrival":  true,
+                                                   "departureTime":  "22:30",
+                                                   "arrivalTime":  "01:15",
+                                                   "arrivalDate":  "2026-02-07"
+                                               },
+                               "transport":  {
+                                                 "type":  "flight",
+                                                 "mode":  "flight",
+                                                 "class":  "economy",
+                                                 "name":  "IndiGo 6E709",
+                                                 "cost":  16100,
+                                                 "details":  {
+                                                                 "airline":  "IndiGo",
+                                                                 "departure":  "22:30",
+                                                                 "arrival":  "01:15",
+                                                                 "duration":  "2h 45m",
+                                                                 "stops":  0
+                                                             }
+                                             },
+                               "accommodation":  {
+                                                     "name":  "Hyatt Centric MG Road Bangalore",
+                                                     "stars":  3,
+                                                     "pricePerNight":  2988,
+                                                     "totalCost":  14940,
+                                                     "nights":  4,
+                                                     "details":  {
+                                                                     "location":  "Ulsoor, Bangalore",
+                                                                     "amenities":  [
+                                                                                       "Free WiFi",
+                                                                                       "Restaurant",
+                                                                                       "Room Service",
+                                                                                       "Parking",
+                                                                                       "Laundry"
+                                                                                   ],
+                                                                     "roomType":  "Standard Room"
+                                                                 }
+                                                 },
+                               "meals":  {
+                                             "tier":  "medium",
+                                             "dailyCost":  110,
+                                             "totalCost":  1980
+                                         },
+                               "activities":  {
+                                                  "tier":  "attraction",
+                                                  "dailyCost":  100,
+                                                  "totalCost":  2000
+                                              }
+                           },
+                           {
+                               "tier":  "balanced-choice",
+                               "name":  "Balanced-choice Plan",
+                               "totalCost":  42670,
+                               "score":  81,
+                               "breakdown":  {
+                                                 "transportTotal":  7470,
+                                                 "accommodationTotal":  30570,
+                                                 "foodTotal":  1980,
+                                                 "activityTotal":  2650,
+                                                 "activitiesIncluded":  true
+                                             },
+                               "nights":  4,
+                               "requestedNights":  5,
+                               "arrivalInfo":  {
+                                                   "isNextDayArrival":  true,
+                                                   "departureTime":  "23:50",
+                                                   "arrivalTime":  "19:45",
+                                                   "arrivalDate":  "2026-02-09"
+                                               },
+                               "transport":  {
+                                                 "type":  "train",
+                                                 "mode":  "train",
+                                                 "class":  "2A",
+                                                 "name":  "YNRK YPR EXP SPL (2A)",
+                                                 "cost":  7470,
+                                                 "details":  {
+                                                                 "trainNumber":  "06598",
+                                                                 "departure":  "23:50",
+                                                                 "arrival":  "19:45",
+                                                                 "duration":  {
+                                                                                  "hours":  43,
+                                                                                  "minutes":  55,
+                                                                                  "totalMinutes":  2635
+                                                                              },
+                                                                 "trainType":  "SPL"
+                                                             }
+                                             },
+                               "accommodation":  {
+                                                     "name":  "Radisson Blu Atria Bengaluru",
+                                                     "stars":  4,
+                                                     "pricePerNight":  6114,
+                                                     "totalCost":  30570,
+                                                     "nights":  4,
+                                                     "details":  {
+                                                                     "location":  "Bangalore",
+                                                                     "amenities":  [
+                                                                                       "Free WiFi",
+                                                                                       "Swimming Pool",
+                                                                                       "Fitness Center",
+                                                                                       "Restaurant",
+                                                                                       "Room Service",
+                                                                                       "Parking",
+                                                                                       "Business Center",
+                                                                                       "Laundry"
+                                                                                   ],
+                                                                     "roomType":  "Standard Room"
+                                                                 }
+                                                 },
+                               "meals":  {
+                                             "tier":  "medium",
+                                             "dailyCost":  110,
+                                             "totalCost":  1980
+                                         },
+                               "activities":  {
+                                                  "tier":  "attraction",
+                                                  "dailyCost":  230,
+                                                  "totalCost":  2650
+                                              }
+                           },
+                           {
+                               "tier":  "comfort-choice",
+                               "name":  "Comfort-choice Plan",
+                               "totalCost":  46300,
+                               "score":  89,
+                               "breakdown":  {
+                                                 "transportTotal":  7470,
+                                                 "accommodationTotal":  35225,
+                                                 "foodTotal":  1980,
+                                                 "activityTotal":  1625,
+                                                 "activitiesIncluded":  true
+                                             },
+                               "nights":  4,
+                               "requestedNights":  5,
+                               "arrivalInfo":  {
+                                                   "isNextDayArrival":  true,
+                                                   "departureTime":  "23:50",
+                                                   "arrivalTime":  "19:45",
+                                                   "arrivalDate":  "2026-02-09"
+                                               },
+                               "transport":  {
+                                                 "type":  "train",
+                                                 "mode":  "train",
+                                                 "class":  "2A",
+                                                 "name":  "YNRK YPR EXP SPL (2A)",
+                                                 "cost":  7470,
+                                                 "details":  {
+                                                                 "trainNumber":  "06598",
+                                                                 "departure":  "23:50",
+                                                                 "arrival":  "19:45",
+                                                                 "duration":  {
+                                                                                  "hours":  43,
+                                                                                  "minutes":  55,
+                                                                                  "totalMinutes":  2635
+                                                                              },
+                                                                 "trainType":  "SPL"
+                                                             }
+                                             },
+                               "accommodation":  {
+                                                     "name":  "Regenta Inn Indiranagar Bangalore",
+                                                     "stars":  4,
+                                                     "pricePerNight":  7045,
+                                                     "totalCost":  35225,
+                                                     "nights":  4,
+                                                     "details":  {
+                                                                     "location":  "Indiranagar, Bangalore",
+                                                                     "amenities":  [
+                                                                                       "Free WiFi",
+                                                                                       "Swimming Pool",
+                                                                                       "Fitness Center",
+                                                                                       "Restaurant",
+                                                                                       "Room Service",
+                                                                                       "Parking",
+                                                                                       "Business Center",
+                                                                                       "Laundry"
+                                                                                   ],
+                                                                     "roomType":  "Standard Room"
+                                                                 }
+                                                 },
+                               "meals":  {
+                                             "tier":  "medium",
+                                             "dailyCost":  110,
+                                             "totalCost":  1980
+                                         },
+                               "activities":  {
+                                                  "tier":  "attraction",
+                                                  "dailyCost":  25,
+                                                  "totalCost":  1625
+                                              }
+                           },
+                           {
+                               "tier":  "premium-choice",
+                               "name":  "Premium-choice Plan",
+                               "totalCost":  49620,
+                               "score":  89,
+                               "breakdown":  {
+                                                 "transportTotal":  7470,
+                                                 "accommodationTotal":  38545,
+                                                 "foodTotal":  1980,
+                                                 "activityTotal":  1625,
+                                                 "activitiesIncluded":  true
+                                             },
+                               "nights":  4,
+                               "requestedNights":  5,
+                               "arrivalInfo":  {
+                                                   "isNextDayArrival":  true,
+                                                   "departureTime":  "23:50",
+                                                   "arrivalTime":  "19:45",
+                                                   "arrivalDate":  "2026-02-09"
+                                               },
+                               "transport":  {
+                                                 "type":  "train",
+                                                 "mode":  "train",
+                                                 "class":  "2A",
+                                                 "name":  "YNRK YPR EXP SPL (2A)",
+                                                 "cost":  7470,
+                                                 "details":  {
+                                                                 "trainNumber":  "06598",
+                                                                 "departure":  "23:50",
+                                                                 "arrival":  "19:45",
+                                                                 "duration":  {
+                                                                                  "hours":  43,
+                                                                                  "minutes":  55,
+                                                                                  "totalMinutes":  2635
+                                                                              },
+                                                                 "trainType":  "SPL"
+                                                             }
+                                             },
+                               "accommodation":  {
+                                                     "name":  "JW Marriott Hotel Bengaluru",
+                                                     "stars":  4,
+                                                     "pricePerNight":  7709,
+                                                     "totalCost":  38545,
+                                                     "nights":  4,
+                                                     "details":  {
+                                                                     "location":  "Bangalore Shopping Area, Bangalore",
+                                                                     "amenities":  [
+                                                                                       "Free WiFi",
+                                                                                       "Swimming Pool",
+                                                                                       "Fitness Center",
+                                                                                       "Restaurant",
+                                                                                       "Room Service",
+                                                                                       "Parking",
+                                                                                       "Business Center",
+                                                                                       "Laundry"
+                                                                                   ],
+                                                                     "roomType":  "Standard Room"
+                                                                 }
+                                                 },
+                               "meals":  {
+                                             "tier":  "medium",
+                                             "dailyCost":  110,
+                                             "totalCost":  1980
+                                         },
+                               "activities":  {
+                                                  "tier":  "attraction",
+                                                  "dailyCost":  25,
+                                                  "totalCost":  1625
+                                              }
+                           }
+                       ],
+    "algorithmMetadata":  {
+                              "plansGenerated":  5,
+                              "cheapestPossible":  25385,
+                              "iterations":  2000,
+                              "activitiesIncluded":  true
+                          },
+    "itinerary":  [
+                      {
+                          "day":  1,
+                          "title":  "Departure Day (In Transit)",
+                          "activities":  [
+                                             {
+                                                 "time":  "23:50",
+                                                 "activity":  "YNRK YPR EXP SPL (2A): Delhi → Bangalore",
+                                                 "type":  "transport",
+                                                 "description":  "Duration: 43h 55m • Overnight journey",
+                                                 "cost":  3735
+                                             },
+                                             {
+                                                 "time":  "Night",
+                                                 "activity":  "In transit (no hotel stay)",
+                                                 "type":  "travel",
+                                                 "description":  "Traveling overnight"
+                                             }
+                                         ]
+                      },
+                      {
+                          "day":  2,
+                          "title":  "Arrival Day",
+                          "activities":  [
+                                             {
+                                                 "time":  "19:45",
+                                                 "activity":  "Arrive at Bangalore",
+                                                 "type":  "travel"
+                                             },
+                                             {
+                                                 "time":  "20:00",
+                                                 "activity":  "Check-in: JW Marriott Hotel Bengaluru",
+                                                 "type":  "accommodation",
+                                                 "cost":  7709,
+                                                 "costLabel":  "Per Night"
+                                             },
+                                             {
+                                                 "time":  "15:00",
+                                                 "activity":  "Explore nearby area",
+                                                 "type":  "leisure"
+                                             },
+                                             {
+                                                 "time":  "19:30",
+                                                 "activity":  "Dinner",
+                                                 "type":  "meal",
+                                                 "cost":  500
+                                             }
+                                         ]
+                      },
+                      {
+                          "day":  3,
+                          "title":  "Day 3 - Explore Bangalore",
+                          "activities":  [
+                                             {
+                                                 "time":  "08:00",
+                                                 "activity":  "Breakfast at hotel",
+                                                 "type":  "meal",
+                                                 "cost":  200
+                                             },
+                                             {
+                                                 "time":  "09:00 - 12:00",
+                                                 "activity":  "Lalbagh Botanical Garden",
+                                                 "type":  "attraction",
+                                                 "details":  {
+                                                                 "name":  "Lalbagh Botanical Garden",
+                                                                 "type":  "Garden",
+                                                                 "entryFee":  25,
+                                                                 "duration":  "2-3 hours"
+                                                             }
+                                             },
+                                             {
+                                                 "time":  "12:30",
+                                                 "activity":  "Lunch at local restaurant",
+                                                 "type":  "meal",
+                                                 "cost":  300
+                                             },
+                                             {
+                                                 "time":  "14:00 - 17:00",
+                                                 "activity":  "Cubbon Park",
+                                                 "type":  "attraction",
+                                                 "details":  {
+                                                                 "name":  "Cubbon Park",
+                                                                 "type":  "Garden",
+                                                                 "entryFee":  0,
+                                                                 "duration":  "2 hours"
+                                                             }
+                                             },
+                                             {
+                                                 "time":  "17:30",
+                                                 "activity":  "Tea break and relaxation",
+                                                 "type":  "leisure"
+                                             },
+                                             {
+                                                 "time":  "19:30",
+                                                 "activity":  "Dinner",
+                                                 "type":  "meal",
+                                                 "cost":  500
+                                             }
+                                         ]
+                      },
+                      {
+                          "day":  4,
+                          "title":  "Day 4 - Explore Bangalore",
+                          "activities":  [
+                                             {
+                                                 "time":  "08:00",
+                                                 "activity":  "Breakfast at hotel",
+                                                 "type":  "meal",
+                                                 "cost":  200
+                                             },
+                                             {
+                                                 "time":  "09:00 - 12:00",
+                                                 "activity":  "Bangalore Palace",
+                                                 "type":  "attraction",
+                                                 "details":  {
+                                                                 "name":  "Bangalore Palace",
+                                                                 "type":  "Palace",
+                                                                 "entryFee":  230,
+                                                                 "duration":  "2 hours"
+                                                             }
+                                             },
+                                             {
+                                                 "time":  "12:30",
+                                                 "activity":  "Lunch at local restaurant",
+                                                 "type":  "meal",
+                                                 "cost":  300
+                                             },
+                                             {
+                                                 "time":  "14:00 - 17:00",
+                                                 "activity":  "ISKCON Temple",
+                                                 "type":  "attraction",
+                                                 "details":  {
+                                                                 "name":  "ISKCON Temple",
+                                                                 "type":  "Religious",
+                                                                 "entryFee":  0,
+                                                                 "duration":  "1-2 hours"
+                                                             }
+                                             },
+                                             {
+                                                 "time":  "17:30",
+                                                 "activity":  "Tea break and relaxation",
+                                                 "type":  "leisure"
+                                             },
+                                             {
+                                                 "time":  "19:30",
+                                                 "activity":  "Dinner",
+                                                 "type":  "meal",
+                                                 "cost":  500
+                                             }
+                                         ]
+                      },
+                      {
+                          "day":  5,
+                          "title":  "Departure Day",
+                          "activities":  [
+                                             {
+                                                 "time":  "08:00",
+                                                 "activity":  "Breakfast at hotel",
+                                                 "type":  "meal",
+                                                 "cost":  200
+                                             },
+                                             {
+                                                 "time":  "09:00",
+                                                 "activity":  "Hotel check-out",
+                                                 "type":  "travel"
+                                             },
+                                             {
+                                                 "time":  "10:00",
+                                                 "activity":  "Last-minute sightseeing or shopping",
+                                                 "type":  "leisure"
+                                             },
+                                             {
+                                                 "time":  "13:00",
+                                                 "activity":  "Lunch",
+                                                 "type":  "meal",
+                                                 "cost":  300
+                                             },
+                                             {
+                                                 "time":  "15:00",
+                                                 "activity":  "Head to station/airport",
+                                                 "type":  "travel"
+                                             },
+                                             {
+                                                 "time":  "18:00",
+                                                 "activity":  "YNRK YPR EXP SPL (2A): Bangalore → Delhi",
+                                                 "type":  "transport",
+                                                 "description":  "Duration: 43h 55m",
+                                                 "cost":  3735
+                                             }
+                                         ]
+                      }
+                  ],
+    "arrivalInfo":  {
+                        "departureDate":  "2026-02-07",
+                        "departureTime":  "23:50",
+                        "arrivalDate":  "2026-02-09",
+                        "arrivalTime":  "19:45",
+                        "isNextDayArrival":  true,
+                        "hotelCheckInDate":  "2026-02-09",
+                        "requestedNights":  5,
+                        "adjustedNights":  4
+                    },
+    "transportTiming":  {
+                            "outboundDeparture":  "23:50",
+                            "outboundArrival":  "19:45",
+                            "isOvernightTravel":  true,
+                            "returnDeparture":  null,
+                            "returnDate":  "2026-02-12",
+                            "transportName":  "YNRK YPR EXP SPL (2A)",
+                            "transportPrice":  3735,
+                            "transportDuration":  "43h 55m",
+                            "sourceCity":  "Delhi",
+                            "destCity":  "Bangalore",
+                            "actualArrivalDate":  "2026-02-09",
+                            "actualArrivalTime":  "19:45",
+                            "hotelCheckInDate":  "2026-02-09"
+                        },
+    "warnings":  null,
+    "destinationAttractions":  [
+                                   {
+                                       "id":  "lalbagh-botanical-garden",
+                                       "name":  "Lalbagh Botanical Garden",
+                                       "type":  "Garden",
+                                       "entryFee":  25,
+                                       "duration":  "2-3 hours"
+                                   },
+                                   {
+                                       "id":  "cubbon-park",
+                                       "name":  "Cubbon Park",
+                                       "type":  "Garden",
+                                       "entryFee":  0,
+                                       "duration":  "2 hours"
+                                   },
+                                   {
+                                       "id":  "bangalore-palace",
+                                       "name":  "Bangalore Palace",
+                                       "type":  "Palace",
+                                       "entryFee":  230,
+                                       "duration":  "2 hours"
+                                   },
+                                   {
+                                       "id":  "iskcon-temple",
+                                       "name":  "ISKCON Temple",
+                                       "type":  "Religious",
+                                       "entryFee":  0,
+                                       "duration":  "1-2 hours"
+                                   }
+                               ],
+    "inCityTransportOptions":  [
+                                   {
+                                       "type":  "Auto Rickshaw",
+                                       "category":  "budget",
+                                       "ratePerKm":  15,
+                                       "totalFare":  2700,
+                                       "notes":  "Economical, best for short distances",
+                                       "capacity":  3,
+                                       "suitableFor":  "suitable"
+                                   },
+                                   {
+                                       "type":  "Bike Rental",
+                                       "category":  "adventure",
+                                       "dailyRate":  400,
+                                       "totalFare":  2400,
+                                       "notes":  "For solo travelers, requires license",
+                                       "capacity":  1,
+                                       "suitableFor":  "suitable"
+                                   },
+                                   {
+                                       "type":  "Car Rental (Self-Drive)",
+                                       "category":  "comfort",
+                                       "dailyRate":  2000,
+                                       "totalFare":  12000,
+                                       "ratePerKm":  0,
+                                       "notes":  "Freedom to explore, requires license",
+                                       "capacity":  4,
+                                       "carType":  "hatchback",
+                                       "suitableFor":  "suitable"
+                                   },
+                                   {
+                                       "type":  "Car Rental (With Driver)",
+                                       "category":  "comfort",
+                                       "dailyRate":  2500,
+                                       "ratePerKm":  10,
+                                       "totalFare":  15800,
+                                       "notes":  "Convenient, driver included",
+                                       "capacity":  4,
+                                       "carType":  "sedan",
+                                       "suitableFor":  "suitable"
+                                   },
+                                   {
+                                       "type":  "Cab (On-Demand)",
+                                       "category":  "flexible",
+                                       "ratePerKm":  18,
+                                       "totalFare":  3240,
+                                       "notes":  "Pay per ride, most flexible",
+                                       "capacity":  4,
+                                       "suitableFor":  "suitable"
+                                   }
+                               ],
+    "transportAlternatives":  [
+
+                              ],
+    "createdAt":  "2026-02-02T09:12:39.667Z",
+    "mongoId":  null,
+    "savedToAccount":  false
+}

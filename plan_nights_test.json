@@ -1,0 +1,34 @@
+﻿[
+    {
+        "tier":  "Budget",
+        "transport_name":  "FZR MMCT JANTA (2A)",
+        "duration":  {
+                         "hours":  30,
+                         "minutes":  33,
+                         "totalMinutes":  1833
+                     },
+        "nights":  8,
+        "requestedNights":  9
+    },
+    {
+        "tier":  "Comfort",
+        "transport_name":  "Mumbai Rajdhani (2A)",
+        "duration":  {
+                         "hours":  15,
+                         "minutes":  35
+                     },
+        "nights":  8,
+        "requestedNights":  9
+    },
+    {
+        "tier":  "Premium",
+        "transport_name":  "HW BDTS EXP (2A)",
+        "duration":  {
+                         "hours":  27,
+                         "minutes":  35,
+                         "totalMinutes":  1655
+                     },
+        "nights":  8,
+        "requestedNights":  9
+    }
+]

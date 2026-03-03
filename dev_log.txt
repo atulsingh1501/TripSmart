@@ -1,0 +1,80 @@
+﻿
+> ai-trip-planning-app@0.0.1 dev
+> vite
+
+node.exe : Failed to 
+resolve dependency: 
+[36mreact[39m, present 
+in client 
+'optimizeDeps.include'
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Fai  
+  led to resol...zeDeps.   
+ include':String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Failed to resolve 
+dependency: 
+[36mreact-dom[39m, 
+present in client 
+'optimizeDeps.include'
+Failed to resolve 
+dependency: [36mreact/jsx-
+dev-runtime[39m, present 
+in client 
+'optimizeDeps.include'
+Failed to resolve 
+dependency: [36mreact/jsx-
+runtime[39m, present in 
+client 
+'optimizeDeps.include'
+Port 5173 is in use, trying another one...
+
+  [32m[1mVITE[22m v6.3.5[39m  [2mready in [0m[1m446[22m[2m[0m ms[22m
+
+  [32mΓ₧£[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5174[22m/[39m
+[2m  [32mΓ₧£[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+[2m[32m  Γ₧£[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+Error: The following 
+dependencies are imported 
+but could not be resolved:
+
+  
+[36mreact-dom/client[39m 
+[37m[2m(imported by D:/Tr
+ipSmart-main/src/main.tsx)
+[22m[39m
+  [36mreact/jsx-runtime[3
+9m [37m[2m(imported by D:
+/TripSmart-main/src/app/com
+ponents/ui/dropdown-menu.ts
+x)[22m[39m
+  [36mreact[39m 
+[37m[2m(imported by D:/Tr
+ipSmart-main/src/app/compon
+ents/MapBackground.tsx)[22
+m[39m
+
+Are they installed?
+    at file:///D:/TripSmart
+-main/node_modules/vite/dis
+t/node/chunks/dep-DBxKXgDP.
+js:14849:15
+    at process.processTicks
+AndRejections (node:interna
+l/process/task_queues:103:5
+)
+    at async file:///D:/Tri
+pSmart-main/node_modules/vi
+te/dist/node/chunks/dep-DBx
+KXgDP.js:46985:28

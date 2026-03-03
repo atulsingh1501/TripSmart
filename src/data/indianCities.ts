@@ -1,0 +1,593 @@
+// Indian Cities Data for Trip Planning
+export interface City {
+  id: string;
+  name: string;
+  state: string;
+  type: 'metro' | 'tier1' | 'tier2' | 'tourist';
+  description: string;
+  popularFor: string[];
+  bestTimeToVisit: string;
+  averageDailyBudget: number; // in INR
+  hasAirport: boolean;
+  hasRailway: boolean;
+  imageUrl?: string;
+}
+
+export const indianCities: City[] = [
+  // Metro Cities
+  {
+    id: 'del',
+    name: 'Delhi',
+    state: 'Delhi',
+    type: 'metro',
+    description: 'Capital city with rich Mughal heritage and modern infrastructure',
+    popularFor: ['Historical Monuments', 'Street Food', 'Shopping', 'Culture'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 3500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'mum',
+    name: 'Mumbai',
+    state: 'Maharashtra',
+    type: 'metro',
+    description: 'Financial capital with Bollywood, beaches, and colonial architecture',
+    popularFor: ['Bollywood', 'Beaches', 'Nightlife', 'Street Food'],
+    bestTimeToVisit: 'November to February',
+    averageDailyBudget: 4000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'blr',
+    name: 'Bangalore',
+    state: 'Karnataka',
+    type: 'metro',
+    description: 'IT hub with pleasant weather, parks, and vibrant nightlife',
+    popularFor: ['IT Parks', 'Pubs', 'Gardens', 'Pleasant Weather'],
+    bestTimeToVisit: 'Year-round',
+    averageDailyBudget: 3500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'chn',
+    name: 'Chennai',
+    state: 'Tamil Nadu',
+    type: 'metro',
+    description: 'Cultural capital of South India with temples and beaches',
+    popularFor: ['Temples', 'Beaches', 'Classical Music', 'South Indian Cuisine'],
+    bestTimeToVisit: 'November to February',
+    averageDailyBudget: 3000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'kol',
+    name: 'Kolkata',
+    state: 'West Bengal',
+    type: 'metro',
+    description: 'City of Joy with colonial architecture and cultural heritage',
+    popularFor: ['Colonial Architecture', 'Sweets', 'Literature', 'Durga Puja'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'hyd',
+    name: 'Hyderabad',
+    state: 'Telangana',
+    type: 'metro',
+    description: 'City of Pearls with Nizami heritage and tech industry',
+    popularFor: ['Biryani', 'Charminar', 'IT Industry', 'Pearls'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 3000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  
+  // Tourist Destinations
+  {
+    id: 'jai',
+    name: 'Jaipur',
+    state: 'Rajasthan',
+    type: 'tourist',
+    description: 'Pink City with majestic forts and royal palaces',
+    popularFor: ['Forts', 'Palaces', 'Handicrafts', 'Culture'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2800,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'agr',
+    name: 'Agra',
+    state: 'Uttar Pradesh',
+    type: 'tourist',
+    description: 'Home to the iconic Taj Mahal and Mughal architecture',
+    popularFor: ['Taj Mahal', 'Agra Fort', 'Petha Sweets'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'goa',
+    name: 'Goa',
+    state: 'Goa',
+    type: 'tourist',
+    description: 'Beach paradise with Portuguese heritage and vibrant nightlife',
+    popularFor: ['Beaches', 'Nightlife', 'Water Sports', 'Churches'],
+    bestTimeToVisit: 'November to February',
+    averageDailyBudget: 3500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'udp',
+    name: 'Udaipur',
+    state: 'Rajasthan',
+    type: 'tourist',
+    description: 'City of Lakes with romantic palaces and scenic beauty',
+    popularFor: ['Lakes', 'Palaces', 'Romance', 'Art'],
+    bestTimeToVisit: 'September to March',
+    averageDailyBudget: 3000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'var',
+    name: 'Varanasi',
+    state: 'Uttar Pradesh',
+    type: 'tourist',
+    description: 'Spiritual capital with ancient ghats and temples',
+    popularFor: ['Ghats', 'Spirituality', 'Temples', 'Silk'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'ker',
+    name: 'Kochi',
+    state: 'Kerala',
+    type: 'tourist',
+    description: 'Gateway to Kerala with backwaters and colonial history',
+    popularFor: ['Backwaters', 'Chinese Fishing Nets', 'Spices', 'Kathakali'],
+    bestTimeToVisit: 'September to March',
+    averageDailyBudget: 2800,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'mun',
+    name: 'Munnar',
+    state: 'Kerala',
+    type: 'tourist',
+    description: 'Hill station with tea plantations and misty mountains',
+    popularFor: ['Tea Gardens', 'Hills', 'Trekking', 'Wildlife'],
+    bestTimeToVisit: 'September to May',
+    averageDailyBudget: 2500,
+    hasAirport: false,
+    hasRailway: false,
+  },
+  {
+    id: 'sml',
+    name: 'Shimla',
+    state: 'Himachal Pradesh',
+    type: 'tourist',
+    description: 'Queen of Hills with colonial charm and snow-capped peaks',
+    popularFor: ['Hills', 'Colonial Architecture', 'Mall Road', 'Snow'],
+    bestTimeToVisit: 'March to June, December to January',
+    averageDailyBudget: 2800,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'mnl',
+    name: 'Manali',
+    state: 'Himachal Pradesh',
+    type: 'tourist',
+    description: 'Adventure hub with snow, rivers, and mountains',
+    popularFor: ['Adventure Sports', 'Snow', 'Trekking', 'Temples'],
+    bestTimeToVisit: 'October to June',
+    averageDailyBudget: 2500,
+    hasAirport: false,
+    hasRailway: false,
+  },
+  {
+    id: 'leh',
+    name: 'Leh',
+    state: 'Ladakh',
+    type: 'tourist',
+    description: 'High-altitude desert with Buddhist monasteries and stunning landscapes',
+    popularFor: ['Monasteries', 'Adventure', 'Scenic Beauty', 'Biking'],
+    bestTimeToVisit: 'May to September',
+    averageDailyBudget: 3500,
+    hasAirport: true,
+    hasRailway: false,
+  },
+  {
+    id: 'ris',
+    name: 'Rishikesh',
+    state: 'Uttarakhand',
+    type: 'tourist',
+    description: 'Yoga capital with adventure activities and spiritual retreats',
+    popularFor: ['Yoga', 'Rafting', 'Adventure', 'Spirituality'],
+    bestTimeToVisit: 'September to November, February to May',
+    averageDailyBudget: 2000,
+    hasAirport: false,
+    hasRailway: true,
+  },
+  {
+    id: 'dar',
+    name: 'Darjeeling',
+    state: 'West Bengal',
+    type: 'tourist',
+    description: 'Queen of Hills with tea gardens and Himalayan views',
+    popularFor: ['Tea Gardens', 'Toy Train', 'Mountains', 'Sunrise'],
+    bestTimeToVisit: 'March to May, October to November',
+    averageDailyBudget: 2500,
+    hasAirport: false,
+    hasRailway: true,
+  },
+  {
+    id: 'mys',
+    name: 'Mysore',
+    state: 'Karnataka',
+    type: 'tourist',
+    description: 'Royal city with magnificent palace and rich heritage',
+    popularFor: ['Mysore Palace', 'Silk', 'Yoga', 'Dasara Festival'],
+    bestTimeToVisit: 'October to February',
+    averageDailyBudget: 2200,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'amr',
+    name: 'Amritsar',
+    state: 'Punjab',
+    type: 'tourist',
+    description: 'Holy city with Golden Temple and Punjabi culture',
+    popularFor: ['Golden Temple', 'Wagah Border', 'Food', 'History'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'ooty',
+    name: 'Ooty',
+    state: 'Tamil Nadu',
+    type: 'tourist',
+    description: 'Queen of Nilgiris with gardens and toy train',
+    popularFor: ['Botanical Gardens', 'Toy Train', 'Tea Gardens', 'Lakes'],
+    bestTimeToVisit: 'October to June',
+    averageDailyBudget: 2500,
+    hasAirport: false,
+    hasRailway: true,
+  },
+  {
+    id: 'jsl',
+    name: 'Jaisalmer',
+    state: 'Rajasthan',
+    type: 'tourist',
+    description: 'Golden City with desert safaris and sand dunes',
+    popularFor: ['Desert Safari', 'Fort', 'Havelis', 'Culture'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'jdh',
+    name: 'Jodhpur',
+    state: 'Rajasthan',
+    type: 'tourist',
+    description: 'Blue City with imposing Mehrangarh Fort',
+    popularFor: ['Mehrangarh Fort', 'Blue Houses', 'Handicrafts', 'Food'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2300,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'aly',
+    name: 'Alleppey',
+    state: 'Kerala',
+    type: 'tourist',
+    description: 'Venice of the East with serene backwaters',
+    popularFor: ['Houseboats', 'Backwaters', 'Beaches', 'Ayurveda'],
+    bestTimeToVisit: 'August to March',
+    averageDailyBudget: 3000,
+    hasAirport: false,
+    hasRailway: true,
+  },
+  {
+    id: 'kan',
+    name: 'Kanyakumari',
+    state: 'Tamil Nadu',
+    type: 'tourist',
+    description: 'Land\'s End of India with stunning sunrise and sunset',
+    popularFor: ['Sunrise', 'Sunset', 'Vivekananda Rock', 'Temples'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 1800,
+    hasAirport: false,
+    hasRailway: true,
+  },
+  {
+    id: 'and',
+    name: 'Port Blair',
+    state: 'Andaman & Nicobar',
+    type: 'tourist',
+    description: 'Island paradise with pristine beaches and coral reefs',
+    popularFor: ['Beaches', 'Scuba Diving', 'Cellular Jail', 'Water Sports'],
+    bestTimeToVisit: 'October to May',
+    averageDailyBudget: 4000,
+    hasAirport: true,
+    hasRailway: false,
+  },
+  {
+    id: 'srn',
+    name: 'Srinagar',
+    state: 'Jammu & Kashmir',
+    type: 'tourist',
+    description: 'Paradise on Earth with Dal Lake and Mughal gardens',
+    popularFor: ['Dal Lake', 'Houseboats', 'Gardens', 'Shikara Rides'],
+    bestTimeToVisit: 'April to October',
+    averageDailyBudget: 3200,
+    hasAirport: true,
+    hasRailway: false,
+  },
+  {
+    id: 'gng',
+    name: 'Gangtok',
+    state: 'Sikkim',
+    type: 'tourist',
+    description: 'Gateway to Sikkim with monasteries and mountain views',
+    popularFor: ['Monasteries', 'Mountains', 'Cable Car', 'Buddhism'],
+    bestTimeToVisit: 'March to June, September to December',
+    averageDailyBudget: 2800,
+    hasAirport: false,
+    hasRailway: false,
+  },
+  
+  // Tier-1 Cities
+  {
+    id: 'ahm',
+    name: 'Ahmedabad',
+    state: 'Gujarat',
+    type: 'tier1',
+    description: 'UNESCO Heritage City with textile heritage and food culture',
+    popularFor: ['Heritage Walk', 'Street Food', 'Sabarmati Ashram', 'Textiles'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2500,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'pun',
+    name: 'Pune',
+    state: 'Maharashtra',
+    type: 'tier1',
+    description: 'Cultural capital of Maharashtra with educational institutions',
+    popularFor: ['Education', 'IT', 'History', 'Food'],
+    bestTimeToVisit: 'October to February',
+    averageDailyBudget: 2800,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'lko',
+    name: 'Lucknow',
+    state: 'Uttar Pradesh',
+    type: 'tier1',
+    description: 'City of Nawabs with rich culinary and cultural heritage',
+    popularFor: ['Kebabs', 'Nawabi Culture', 'Architecture', 'Chikankari'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2200,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'coi',
+    name: 'Coimbatore',
+    state: 'Tamil Nadu',
+    type: 'tier1',
+    description: 'Manchester of South India, gateway to Ooty',
+    popularFor: ['Temples', 'Industries', 'Gateway to Hills'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2200,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'ind',
+    name: 'Indore',
+    state: 'Madhya Pradesh',
+    type: 'tier1',
+    description: 'Cleanest city with amazing street food culture',
+    popularFor: ['Street Food', 'Cleanliness', 'Rajwada Palace'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'nag',
+    name: 'Nagpur',
+    state: 'Maharashtra',
+    type: 'tier1',
+    description: 'Orange City at the center of India',
+    popularFor: ['Oranges', 'Central Location', 'Wildlife'],
+    bestTimeToVisit: 'October to February',
+    averageDailyBudget: 2000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'bho',
+    name: 'Bhopal',
+    state: 'Madhya Pradesh',
+    type: 'tier1',
+    description: 'City of Lakes with rich history and heritage',
+    popularFor: ['Lakes', 'Mosques', 'Sanchi Stupa', 'Museums'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2000,
+    hasAirport: true,
+    hasRailway: true,
+  },
+  {
+    id: 'viz',
+    name: 'Visakhapatnam',
+    state: 'Andhra Pradesh',
+    type: 'tier1',
+    description: 'Port city with beaches and hills',
+    popularFor: ['Beaches', 'Hills', 'Navy', 'Nature'],
+    bestTimeToVisit: 'October to March',
+    averageDailyBudget: 2200,
+    hasAirport: true,
+    hasRailway: true,
+  },
+];
+
+// Popular routes for trip planning
+export interface Route {
+  id: string;
+  name: string;
+  cities: string[];
+  duration: number; // in days
+  description: string;
+  budgetRange: { min: number; max: number }; // in INR per person
+  theme: string[];
+}
+
+export const popularRoutes: Route[] = [
+  {
+    id: 'golden-triangle',
+    name: 'Golden Triangle',
+    cities: ['del', 'agr', 'jai'],
+    duration: 6,
+    description: 'Classic route covering Delhi, Agra, and Jaipur - must-do for first-time visitors',
+    budgetRange: { min: 15000, max: 50000 },
+    theme: ['Heritage', 'Culture', 'History'],
+  },
+  {
+    id: 'rajasthan-royal',
+    name: 'Rajasthan Royal Circuit',
+    cities: ['del', 'jai', 'jdh', 'jsl', 'udp'],
+    duration: 10,
+    description: 'Experience the royal heritage of Rajasthan',
+    budgetRange: { min: 25000, max: 80000 },
+    theme: ['Heritage', 'Culture', 'Desert', 'Palaces'],
+  },
+  {
+    id: 'kerala-backwaters',
+    name: 'Kerala Backwaters',
+    cities: ['ker', 'mun', 'aly'],
+    duration: 7,
+    description: 'God\'s Own Country - backwaters, hills, and beaches',
+    budgetRange: { min: 20000, max: 60000 },
+    theme: ['Nature', 'Relaxation', 'Backwaters', 'Ayurveda'],
+  },
+  {
+    id: 'himalayan-adventure',
+    name: 'Himalayan Adventure',
+    cities: ['del', 'ris', 'sml', 'mnl'],
+    duration: 10,
+    description: 'Mountains, spirituality, and adventure sports',
+    budgetRange: { min: 20000, max: 70000 },
+    theme: ['Adventure', 'Mountains', 'Spirituality'],
+  },
+  {
+    id: 'south-india-temple',
+    name: 'South India Temple Trail',
+    cities: ['chn', 'mys', 'ooty', 'kan'],
+    duration: 8,
+    description: 'Ancient temples and hill stations of South India',
+    budgetRange: { min: 18000, max: 55000 },
+    theme: ['Temples', 'Culture', 'Nature'],
+  },
+  {
+    id: 'northeast-explorer',
+    name: 'Northeast Explorer',
+    cities: ['kol', 'dar', 'gng'],
+    duration: 8,
+    description: 'Tea gardens, mountains, and Buddhist culture',
+    budgetRange: { min: 22000, max: 65000 },
+    theme: ['Nature', 'Culture', 'Tea Gardens', 'Mountains'],
+  },
+  {
+    id: 'beach-hopping',
+    name: 'Beach Paradise',
+    cities: ['mum', 'goa', 'ker'],
+    duration: 8,
+    description: 'Sun, sand, and sea along India\'s western coast',
+    budgetRange: { min: 25000, max: 75000 },
+    theme: ['Beach', 'Nightlife', 'Relaxation', 'Water Sports'],
+  },
+  {
+    id: 'spiritual-india',
+    name: 'Spiritual India',
+    cities: ['del', 'var', 'ris', 'amr'],
+    duration: 9,
+    description: 'Journey through India\'s spiritual heart',
+    budgetRange: { min: 15000, max: 45000 },
+    theme: ['Spirituality', 'Religion', 'Culture', 'Yoga'],
+  },
+  {
+    id: 'ladakh-leh',
+    name: 'Ladakh Adventure',
+    cities: ['del', 'leh'],
+    duration: 7,
+    description: 'High altitude desert adventure in the Himalayas',
+    budgetRange: { min: 30000, max: 90000 },
+    theme: ['Adventure', 'Mountains', 'Biking', 'Photography'],
+  },
+  {
+    id: 'andaman-islands',
+    name: 'Andaman Islands',
+    cities: ['chn', 'and'],
+    duration: 6,
+    description: 'Pristine beaches and coral reefs of Andaman',
+    budgetRange: { min: 35000, max: 100000 },
+    theme: ['Beach', 'Scuba Diving', 'Water Sports', 'Island'],
+  },
+];
+
+// Get city by ID
+export const getCityById = (id: string): City | undefined => {
+  return indianCities.find(city => city.id === id);
+};
+
+// Get cities by type
+export const getCitiesByType = (type: City['type']): City[] => {
+  return indianCities.filter(city => city.type === type);
+};
+
+// Get cities by state
+export const getCitiesByState = (state: string): City[] => {
+  return indianCities.filter(city => city.state.toLowerCase() === state.toLowerCase());
+};
+
+// Search cities
+export const searchCities = (query: string): City[] => {
+  const lowerQuery = query.toLowerCase();
+  return indianCities.filter(city => 
+    city.name.toLowerCase().includes(lowerQuery) ||
+    city.state.toLowerCase().includes(lowerQuery) ||
+    city.popularFor.some(tag => tag.toLowerCase().includes(lowerQuery))
+  );
+};
+
+// Get route by ID
+export const getRouteById = (id: string): Route | undefined => {
+  return popularRoutes.find(route => route.id === id);
+};
+
+// Get routes containing a city
+export const getRoutesByCity = (cityId: string): Route[] => {
+  return popularRoutes.filter(route => route.cities.includes(cityId));
+};

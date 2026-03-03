@@ -1,0 +1,189 @@
+﻿[
+    {
+        "id":  "28033445-d116-4792-a25e-e7a6f68bca0a",
+        "tier":  "Budget",
+        "description":  "Best-value Plan",
+        "nights":  5,
+        "requestedNights":  5,
+        "arrivalInfo":  {
+                            "isNextDayArrival":  false,
+                            "departureTime":  "15:00",
+                            "arrivalTime":  "17:44",
+                            "arrivalDate":  "2026-02-07"
+                        },
+        "transport":  {
+                          "type":  "flight",
+                          "mode":  "flight",
+                          "class":  "economy",
+                          "name":  "IndiGo 6E103",
+                          "cost":  16680,
+                          "details":  {
+                                          "airline":  "IndiGo",
+                                          "departure":  "15:00",
+                                          "arrival":  "17:44",
+                                          "duration":  "2h 44m",
+                                          "stops":  0
+                                      }
+                      },
+        "localTransport":  null,
+        "hotel":  {
+                      "name":  "Radisson Blu Bengaluru Outer Ring Road",
+                      "stars":  3,
+                      "pricePerNight":  5233,
+                      "totalCost":  26165,
+                      "nights":  5,
+                      "details":  {
+                                      "location":  "Marathahalli, Bangalore",
+                                      "amenities":  [
+                                                        "Free WiFi",
+                                                        "Restaurant",
+                                                        "Room Service",
+                                                        "Parking",
+                                                        "Laundry"
+                                                    ],
+                                      "roomType":  "Standard Room"
+                                  }
+                  },
+        "costs":  {
+                      "transport":  16680,
+                      "localTransport":  0,
+                      "accommodation":  26165,
+                      "activities":  2650,
+                      "meals":  4500,
+                      "miscellaneous":  0,
+                      "total":  49995
+                  },
+        "highlights":  [
+                           "Score: 69",
+                           "₹49,995 total",
+                           "IndiGo 6E103",
+                           "Radisson Blu Bengaluru Outer Ring Road"
+                       ]
+    },
+    {
+        "id":  "4f587a07-abd6-4c90-bb43-865f89da1469",
+        "tier":  "Comfort",
+        "description":  "Budget-saver Plan",
+        "nights":  5,
+        "requestedNights":  5,
+        "arrivalInfo":  {
+                            "isNextDayArrival":  false,
+                            "departureTime":  "05:00",
+                            "arrivalTime":  "07:39",
+                            "arrivalDate":  "2026-02-07"
+                        },
+        "transport":  {
+                          "type":  "flight",
+                          "mode":  "flight",
+                          "class":  "economy",
+                          "name":  "Air India Express I5234",
+                          "cost":  15990,
+                          "details":  {
+                                          "airline":  "Air India Express",
+                                          "departure":  "05:00",
+                                          "arrival":  "07:39",
+                                          "duration":  "2h 39m",
+                                          "stops":  0
+                                      }
+                      },
+        "localTransport":  null,
+        "hotel":  {
+                      "name":  "Hyatt Centric MG Road Bangalore",
+                      "stars":  3,
+                      "pricePerNight":  3186,
+                      "totalCost":  15930,
+                      "nights":  5,
+                      "details":  {
+                                      "location":  "Ulsoor, Bangalore",
+                                      "amenities":  [
+                                                        "Free WiFi",
+                                                        "Restaurant",
+                                                        "Room Service",
+                                                        "Parking",
+                                                        "Laundry"
+                                                    ],
+                                      "roomType":  "Standard Room"
+                                  }
+                  },
+        "costs":  {
+                      "transport":  15990,
+                      "localTransport":  0,
+                      "accommodation":  15930,
+                      "activities":  2000,
+                      "meals":  1350,
+                      "miscellaneous":  0,
+                      "total":  35270
+                  },
+        "highlights":  [
+                           "Score: 50",
+                           "₹35,270 total",
+                           "Air India Express I5234",
+                           "Hyatt Centric MG Road Bangalore"
+                       ]
+    },
+    {
+        "id":  "ab7fc40b-c3af-4d5b-a5d1-e2124d31e299",
+        "tier":  "Premium",
+        "description":  "Balanced-choice Plan",
+        "nights":  3,
+        "requestedNights":  5,
+        "arrivalInfo":  {
+                            "isNextDayArrival":  true,
+                            "departureTime":  "23:50",
+                            "arrivalTime":  "19:45",
+                            "arrivalDate":  "2026-02-09"
+                        },
+        "transport":  {
+                          "type":  "train",
+                          "mode":  "train",
+                          "class":  "2A",
+                          "name":  "YNRK YPR EXP SPL (2A)",
+                          "cost":  7470,
+                          "details":  {
+                                          "trainNumber":  "06598",
+                                          "departure":  "23:50",
+                                          "arrival":  "19:45",
+                                          "duration":  {
+                                                           "hours":  43,
+                                                           "minutes":  55,
+                                                           "totalMinutes":  2635
+                                                       },
+                                          "trainType":  "SPL"
+                                      }
+                      },
+        "localTransport":  null,
+        "hotel":  {
+                      "name":  "Hyatt Centric MG Road Bangalore",
+                      "stars":  3,
+                      "pricePerNight":  5814,
+                      "totalCost":  29070,
+                      "nights":  3,
+                      "details":  {
+                                      "location":  "Ulsoor, Bangalore",
+                                      "amenities":  [
+                                                        "Free WiFi",
+                                                        "Restaurant",
+                                                        "Room Service",
+                                                        "Parking",
+                                                        "Laundry"
+                                                    ],
+                                      "roomType":  "Standard Room"
+                                  }
+                  },
+        "costs":  {
+                      "transport":  7470,
+                      "localTransport":  0,
+                      "accommodation":  29070,
+                      "activities":  1625,
+                      "meals":  4500,
+                      "miscellaneous":  0,
+                      "total":  42665
+                  },
+        "highlights":  [
+                           "Score: 81",
+                           "₹42,665 total",
+                           "YNRK YPR EXP SPL (2A)",
+                           "Hyatt Centric MG Road Bangalore"
+                       ]
+    }
+]
