@@ -627,6 +627,14 @@ export default function PlanTripPage() {
   const progress = ((currentStep + 1) / steps.length) * 100;
   const StepIcon = steps[currentStep].icon;
 
+  // Index of the Transportation step (dynamic — depends on whether Select Places is included)
+  const transportStepIdx = steps.findIndex(s => s.title === 'Transportation');
+  const basicDetailsIdx  = steps.findIndex(s => s.title === 'Basic Details');
+  // True once we reach or pass the Transportation step
+  const atOrPastTransport = transportStepIdx !== -1 && currentStep >= transportStepIdx;
+  // True from Basic Details up to (but not including) Transportation
+  const inPreTransportRange = currentStep >= basicDetailsIdx && !atOrPastTransport;
+
   return (
     <div className="map-page relative w-full h-dvh overflow-hidden">
       {/* ── Full-screen Map Background ── */}
@@ -635,18 +643,16 @@ export default function PlanTripPage() {
         destination={formData.destination}
         stops={formData.stops}
         showDirectDistance={
-          steps[currentStep].title === 'Basic Details' &&
+          inPreTransportRange &&
           !!formData.origin && !!formData.destination
         }
         flightPaths={
-          steps[currentStep].title === 'Transportation' &&
-          formData.transportation.includes('flights')
+          atOrPastTransport && formData.transportation.includes('flights')
             ? prefetchedFlightPaths
             : []
         }
         trainPaths={
-          steps[currentStep].title === 'Transportation' &&
-          formData.transportation.includes('trains')
+          atOrPastTransport && formData.transportation.includes('trains')
             ? prefetchedTrainPaths
             : []
         }

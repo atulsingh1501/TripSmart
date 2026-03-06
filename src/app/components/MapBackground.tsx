@@ -175,9 +175,9 @@ export default function MapBackground({
             layersRef.current.push(
                 L.polyline(allPositions, {
                     color: '#3b82f6',
-                    weight: 3,
-                    opacity: 0.85,
-                    dashArray: '8 6',
+                    weight: 1.5,
+                    opacity: 0.7,
+                    dashArray: '6 6',
                     pane: 'routePane',
                 }).addTo(map)
             );
@@ -192,9 +192,9 @@ export default function MapBackground({
             layersRef.current.push(
                 L.polyline([originCoords, destinationCoords], {
                     color: '#94a3b8',
-                    weight: 2,
-                    opacity: 0.75,
-                    dashArray: '4 9',
+                    weight: 1,
+                    opacity: 0.6,
+                    dashArray: '3 9',
                     pane: 'routePane',
                 }).addTo(map)
             );
@@ -222,28 +222,28 @@ export default function MapBackground({
         routeLayersRef.current.forEach(l => l.remove());
         routeLayersRef.current = [];
 
-        // Flight arcs – sky-blue curved, semi-transparent
+        // Flight arcs – sky-blue curved, thin line
         flightPaths.forEach(path => {
             if (path.length < 2) return;
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
                     color: '#38bdf8',
-                    weight: 3,
-                    opacity: 0.9,
+                    weight: 1,
+                    opacity: 0.65,
                     pane: 'routePane',
                 }).addTo(map)
             );
         });
 
-        // Train routes – amber/orange straight lines
+        // Train routes – amber/orange thin dashed lines
         trainPaths.forEach(path => {
             if (path.length < 2) return;
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
                     color: '#fb923c',
-                    weight: 4,
-                    opacity: 0.9,
-                    dashArray: '10 4',
+                    weight: 1,
+                    opacity: 0.65,
+                    dashArray: '6 6',
                     pane: 'routePane',
                 }).addTo(map)
             );

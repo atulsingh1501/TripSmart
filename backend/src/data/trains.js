@@ -539,6 +539,92 @@ const trainRoutes = [
     arrival: '06:35',
     classes: ['2A', '3A', 'SL'],
     baseFare: 350
+  },
+
+  // Bangalore - Kolkata (Howrah)
+  {
+    trainNumber: '12245',
+    name: 'HWH YPR Duronto Express',
+    type: 'DUR',
+    from: { code: 'HWH', name: 'Howrah Junction', city: 'CCU' },
+    to: { code: 'YPR', name: 'Yesvantpur Junction', city: 'BLR' },
+    distance: 1897,
+    duration: { hours: 28, minutes: 0 },
+    days: ['Mon', 'Thu', 'Sat'],
+    departure: '08:55',
+    arrival: '12:55',
+    classes: ['1A', '2A', '3A', 'SL'],
+    baseFare: 1100
+  },
+  {
+    trainNumber: '12246',
+    name: 'YPR HWH Duronto Express',
+    type: 'DUR',
+    from: { code: 'YPR', name: 'Yesvantpur Junction', city: 'BLR' },
+    to: { code: 'HWH', name: 'Howrah Junction', city: 'CCU' },
+    distance: 1897,
+    duration: { hours: 27, minutes: 30 },
+    days: ['Tue', 'Fri', 'Sun'],
+    departure: '10:10',
+    arrival: '13:40',
+    classes: ['1A', '2A', '3A', 'SL'],
+    baseFare: 1100
+  },
+  {
+    trainNumber: '22887',
+    name: 'HWH YPR Superfast Express',
+    type: 'SF',
+    from: { code: 'HWH', name: 'Howrah Junction', city: 'CCU' },
+    to: { code: 'YPR', name: 'Yesvantpur Junction', city: 'BLR' },
+    distance: 1897,
+    duration: { hours: 33, minutes: 0 },
+    days: ['Wed', 'Sat'],
+    departure: '23:55',
+    arrival: '08:55',
+    classes: ['2A', '3A', 'SL', '2S'],
+    baseFare: 900
+  },
+  {
+    trainNumber: '22888',
+    name: 'YPR HWH Superfast Express',
+    type: 'SF',
+    from: { code: 'YPR', name: 'Yesvantpur Junction', city: 'BLR' },
+    to: { code: 'HWH', name: 'Howrah Junction', city: 'CCU' },
+    distance: 1897,
+    duration: { hours: 33, minutes: 30 },
+    days: ['Mon', 'Thu'],
+    departure: '22:30',
+    arrival: '08:00',
+    classes: ['2A', '3A', 'SL', '2S'],
+    baseFare: 900
+  },
+  {
+    trainNumber: '12863',
+    name: 'HWH YPR Express',
+    type: 'EXP',
+    from: { code: 'HWH', name: 'Howrah Junction', city: 'CCU' },
+    to: { code: 'YPR', name: 'Yesvantpur Junction', city: 'BLR' },
+    distance: 1897,
+    duration: { hours: 36, minutes: 0 },
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    departure: '14:05',
+    arrival: '02:05',
+    classes: ['2A', '3A', 'SL', '2S'],
+    baseFare: 750
+  },
+  {
+    trainNumber: '12864',
+    name: 'YPR HWH Express',
+    type: 'EXP',
+    from: { code: 'YPR', name: 'Yesvantpur Junction', city: 'BLR' },
+    to: { code: 'HWH', name: 'Howrah Junction', city: 'CCU' },
+    distance: 1897,
+    duration: { hours: 36, minutes: 30 },
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    departure: '19:15',
+    arrival: '07:45',
+    classes: ['2A', '3A', 'SL', '2S'],
+    baseFare: 750
   }
 ];
 

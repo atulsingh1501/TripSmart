@@ -499,6 +499,19 @@ const CORRIDORS: CorridorEntry[] = [
     paths: [[PT.SECUNDERABAD, PT.KAZIPET, PT.VIJAYAWADA, PT.VISAKHAPATNAM, PT.BRAHMAPUR, PT.BHUBANESWAR, PT.KHARAGPUR, PT.KOLKATA]]
   },
 
+  // ── Bangalore ↔ Kolkata (East Coast – HWH-YPR Duronto/Superfast) ─────────
+  {
+    a: ['bangalore','bengaluru'],
+    b: ['kolkata','calcutta'],
+    paths: [[PT.BANGALORE, PT.SECUNDERABAD, PT.VIJAYAWADA, PT.VISAKHAPATNAM, PT.BRAHMAPUR, PT.BHUBANESWAR, PT.KHARAGPUR, PT.KOLKATA]]
+  },
+  // Bangalore ↔ Kolkata (via Guntakal → Secunderabad → Nagpur – alternate inland route)
+  {
+    a: ['bangalore','bengaluru'],
+    b: ['kolkata','calcutta'],
+    paths: [[PT.BANGALORE, PT.GUNTAKAL, PT.SECUNDERABAD, PT.NAGPUR, PT.RAIPUR, PT.BILASPUR, PT.JHARSUGUDA, PT.KHARAGPUR, PT.KOLKATA]]
+  },
+
   // ── Kolkata ↔ Bhubaneswar ────────────────────────────────────────────────
   {
     a: ['kolkata','calcutta'],
@@ -694,15 +707,18 @@ export function getRailwayCorridors(origin: string, destination: string): LatLng
   for (const corridor of allCorridors) {
     const matched = matchCorridor(corridor, a, b);
     if (matched) {
-      // Deduplicate: only add if the first+last waypoint pair is new
+      // Deduplicate by start + midpoint + end so that genuinely different
+      // corridors sharing the same endpoints (e.g. Western Railway vs Central
+      // Railway between Delhi and Mumbai) are both kept.
       for (const path of matched) {
-        const key = path[0].join(',') + ':' + path[path.length-1].join(',');
-        const keyR = path[path.length-1].join(',') + ':' + path[0].join(',');
+        const midIdx = Math.floor(path.length / 2);
+        const key  = path[0].join(',') + ':' + path[midIdx].join(',') + ':' + path[path.length-1].join(',');
+        const keyR = path[path.length-1].join(',') + ':' + path[midIdx].join(',') + ':' + path[0].join(',');
         const alreadyHave = results.some(r => {
-          const rKey = r[0].join(',') + ':' + r[r.length-1].join(',');
+          const rm = Math.floor(r.length / 2);
+          const rKey = r[0].join(',') + ':' + r[rm].join(',') + ':' + r[r.length-1].join(',');
           return rKey === key || rKey === keyR;
         });
-        // Also check mid-corridor similarity (avoid near-identical paths)
         if (!alreadyHave) results.push(path);
       }
     }

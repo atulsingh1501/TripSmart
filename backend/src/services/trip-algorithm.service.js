@@ -99,6 +99,8 @@ class TripAlgorithmService {
         const validPlans = [];
         const warnings = [];
         let cheapestPossible = Infinity;
+        // Track cheapest over-budget plan per transport mode (for premium tier when no within-budget premium exists)
+        const cheapestOverBudgetByMode = {};
 
         // 2. Validate we have options
         const transportOptions = options.transport || [];
@@ -183,7 +185,7 @@ class TripAlgorithmService {
                         budgetUtilization: costs.totalCost / budget
                     });
                 } else {
-                    // Track over-budget plans (keep top 10 cheapest)
+                    // Track over-budget plans (keep top 10 cheapest globally for fallback)
                     if (overBudgetPlans.length < 10 || costs.totalCost < overBudgetPlans[overBudgetPlans.length - 1].totalCost) {
                         overBudgetPlans.push({
                             id: `plan-over-${overBudgetPlans.length + 1}`,
@@ -198,6 +200,21 @@ class TripAlgorithmService {
                         // Sort and keep only top 10
                         overBudgetPlans.sort((a, b) => a.totalCost - b.totalCost);
                         if (overBudgetPlans.length > 10) overBudgetPlans.pop();
+                    }
+                    // Also track cheapest over-budget per mode (for premium tier fallback)
+                    const overMode = combo.transport.mode || combo.transport.type || 'unknown';
+                    if (!cheapestOverBudgetByMode[overMode] || costs.totalCost < cheapestOverBudgetByMode[overMode].totalCost) {
+                        cheapestOverBudgetByMode[overMode] = {
+                            id: `plan-over-${overMode}-${iterations}`,
+                            totalCost: costs.totalCost,
+                            score,
+                            selections: combo,
+                            breakdown: costs.breakdown,
+                            indices: { ...indices },
+                            withinBudget: false,
+                            budgetUtilization: costs.totalCost / budget,
+                            overBudgetBy: costs.totalCost - budget
+                        };
                     }
                 }
             }
@@ -231,106 +248,90 @@ class TripAlgorithmService {
         let rankedPlans = [];
 
         if (validPlans.length > 0) {
-            // Sort plans
-            const sortedByScore = [...validPlans].sort((a, b) => b.score - a.score);
+            console.log('\n--- PHASE 2: Structured Selection (Budget / Best Value / Premium per mode) ---');
 
-            // DIVERSIFY BY TRANSPORT ID: Group plans by specific transport option
-            const plansByTransportId = new Map();
+            // Group valid plans by transport MODE (flight, train, bus, etc.)
+            const validPlansByMode = {};
             validPlans.forEach(plan => {
-                const transportId = plan.selections.transport.id;
-                if (!plansByTransportId.has(transportId)) {
-                    plansByTransportId.set(transportId, []);
+                const mode = plan.selections.transport.mode || plan.selections.transport.type || 'unknown';
+                if (!validPlansByMode[mode]) validPlansByMode[mode] = [];
+                validPlansByMode[mode].push(plan);
+            });
+
+            // Iterate modes in the ORDER the user specified (preserves user preference)
+            const seenModes = new Set();
+            const orderedModes = optionsMap.transport
+                .map(t => t.mode || t.type || 'unknown')
+                .filter(m => { if (seenModes.has(m)) return false; seenModes.add(m); return true; });
+
+            console.log(`   Modes in user selection order: [${orderedModes.join(', ')}]`);
+
+            for (const mode of orderedModes) {
+                const modePlans = validPlansByMode[mode] || [];
+                const overBudgetFallback = cheapestOverBudgetByMode[mode] || null;
+                const modeLabel = mode.charAt(0).toUpperCase() + mode.slice(1);
+
+                if (modePlans.length === 0 && !overBudgetFallback) {
+                    console.log(`   ⚠️  No plans for mode: ${mode} — skipping`);
+                    continue;
                 }
-                plansByTransportId.get(transportId).push(plan);
-            });
 
-            console.log(`   📊 Plans grouped by ${plansByTransportId.size} different transport options`);
-
-            // Get best plan from each transport option for diversity
-            const diversePlans = [];
-            plansByTransportId.forEach((plans) => {
-                const bestForTransport = plans.sort((a, b) => b.score - a.score)[0];
-                diversePlans.push(bestForTransport);
-            });
-
-            // Sort diverse plans by score
-            diversePlans.sort((a, b) => b.score - a.score);
-
-            // FILL TRANSPORT MODE GAPS: Check which transport modes (flight/train) are
-            // represented in validPlans. If a mode has no valid plans but has over-budget
-            // plans, include the cheapest over-budget plan for that mode so users always
-            // see diverse transport options (e.g., both flights and trains).
-            const validModes = new Set(validPlans.map(p => p.selections.transport.mode));
-            const overBudgetModes = new Set();
-            const cheapestOverBudgetByMode = {};
-
-            overBudgetPlans.forEach(p => {
-                const mode = p.selections.transport.mode;
-                overBudgetModes.add(mode);
-                if (!cheapestOverBudgetByMode[mode] || p.totalCost < cheapestOverBudgetByMode[mode].totalCost) {
-                    cheapestOverBudgetByMode[mode] = p;
-                }
-            });
-
-            // Add over-budget plans for modes not represented in valid plans
-            const modeGapPlans = [];
-            overBudgetModes.forEach(mode => {
-                if (!validModes.has(mode) && cheapestOverBudgetByMode[mode]) {
-                    const gapPlan = {
-                        ...cheapestOverBudgetByMode[mode],
+                if (modePlans.length === 0) {
+                    // All options for this mode exceed budget — show cheapest over-budget as only option
+                    rankedPlans.push({
+                        ...overBudgetFallback,
                         isOverBudget: true,
-                        overBudgetBy: cheapestOverBudgetByMode[mode].totalCost - budget
-                    };
-                    modeGapPlans.push(gapPlan);
-                    console.log(`   ✈️  Adding over-budget ${mode} as mode-diversity alternative (₹${gapPlan.totalCost.toLocaleString()}, ₹${gapPlan.overBudgetBy.toLocaleString()} over)`);
+                        category: `${modeLabel} Option (Over Budget)`
+                    });
+                    console.log(`   ⚠️  ${modeLabel} all over budget: cheapest ₹${overBudgetFallback.totalCost.toLocaleString()} (₹${overBudgetFallback.overBudgetBy.toLocaleString()} over)`);
+                    continue;
                 }
-            });
 
-            console.log(`   🎯 Selected ${diversePlans.length} diverse within-budget plans + ${modeGapPlans.length} mode-gap alternatives`);
+                const sortedByCostAsc  = [...modePlans].sort((a, b) => a.totalCost - b.totalCost);
+                const sortedByCostDesc = [...modePlans].sort((a, b) => b.totalCost - a.totalCost);
+                const usedIds = new Set();
 
-            // Budget Flexibility Strategies
-            const categoryLabels = ['Best Value', 'Budget Saver', 'Balanced Choice', 'Comfort Choice', 'Premium Choice'];
+                // ── BUDGET: cheapest valid plan for this mode ──
+                const budgetPlan = sortedByCostAsc[0];
+                usedIds.add(budgetPlan.id);
+                rankedPlans.push({ ...budgetPlan, category: `Budget ${modeLabel}` });
+                console.log(`   ✅ Budget ${modeLabel}: ${budgetPlan.selections.transport.name} + ${budgetPlan.selections.accommodation.name?.substring(0,25)} = ₹${budgetPlan.totalCost.toLocaleString()} (${Math.round(budgetPlan.budgetUtilization * 100)}%)`);
 
-            if (budgetFlexibility === 'strict') {
-                console.log('   🛡️ STRICT mode: Best quality within budget');
-                rankedPlans = diversePlans.slice(0, 10).map((plan, i) => ({
-                    ...plan,
-                    category: categoryLabels[i] || `Option ${i + 1}`
-                }));
+                // ── BEST VALUE: plan closest to 90 % budget utilisation ──
+                const bestValuePlan = [...modePlans]
+                    .filter(p => !usedIds.has(p.id))
+                    .sort((a, b) => Math.abs(a.budgetUtilization - 0.90) - Math.abs(b.budgetUtilization - 0.90))[0];
 
-            } else if (budgetFlexibility === 'flexible') {
-                console.log('   🚀 FLEXIBLE mode: Diverse + mode-gap alternatives');
-                const combined = [...diversePlans, ...modeGapPlans].sort((a, b) => b.score - a.score);
-                rankedPlans = combined.slice(0, 10).map((plan, i) => ({
-                    ...plan,
-                    category: plan.isOverBudget
-                        ? `Premium ${plan.selections.transport.mode === 'flight' ? 'Flight' : 'Train'} Option`
-                        : (categoryLabels[i] || `Option ${i + 1}`)
-                }));
+                if (bestValuePlan) {
+                    usedIds.add(bestValuePlan.id);
+                    rankedPlans.push({ ...bestValuePlan, category: `Best Value ${modeLabel}` });
+                    console.log(`   ✅ Best Value ${modeLabel}: ${bestValuePlan.selections.transport.name} + ${bestValuePlan.selections.accommodation.name?.substring(0,25)} = ₹${bestValuePlan.totalCost.toLocaleString()} (${Math.round(bestValuePlan.budgetUtilization * 100)}%)`);
+                }
 
-            } else {
-                // MODERATE (default): Within-budget diverse plans + mode-gap alternatives at the end
-                console.log('   ⚖️ MODERATE mode: Diverse transport + mode-gap alternatives');
-                rankedPlans = diversePlans.slice(0, 8).map((plan, i) => ({
-                    ...plan,
-                    category: categoryLabels[i] || `Option ${i + 1}`
-                }));
-                // Append over-budget mode-gap plans (clearly labelled)
-                modeGapPlans.forEach(plan => {
-                    if (rankedPlans.length < 10) {
-                        rankedPlans.push({
-                            ...plan,
-                            category: `Premium ${plan.selections.transport.mode === 'flight' ? 'Flight' : plan.selections.transport.mode === 'train' ? 'Train' : 'Transport'} Option`
-                        });
-                    }
-                });
+                // ── PREMIUM: most expensive within budget (best hotel + transport) ──
+                // Falls back to cheapest over-budget option for this mode.
+                const premiumPlan = sortedByCostDesc.find(p => !usedIds.has(p.id));
+
+                if (premiumPlan) {
+                    usedIds.add(premiumPlan.id);
+                    rankedPlans.push({ ...premiumPlan, category: `Premium ${modeLabel}` });
+                    console.log(`   ✅ Premium ${modeLabel}: ${premiumPlan.selections.transport.name} + ${premiumPlan.selections.accommodation.name?.substring(0,25)} = ₹${premiumPlan.totalCost.toLocaleString()} (${Math.round(premiumPlan.budgetUtilization * 100)}%)`);
+                } else if (overBudgetFallback) {
+                    rankedPlans.push({
+                        ...overBudgetFallback,
+                        isOverBudget: true,
+                        category: `Premium ${modeLabel}`
+                    });
+                    console.log(`   ⚠️  Premium ${modeLabel} (over budget): ₹${overBudgetFallback.totalCost.toLocaleString()} (₹${overBudgetFallback.overBudgetBy.toLocaleString()} over)`);
+                }
             }
 
-            console.log(`   Selected ${rankedPlans.length} plans:`);
+            console.log(`\n   Total structured plans: ${rankedPlans.length}`);
             rankedPlans.forEach(p => {
-                const transportName = p.selections.transport.name || 'Unknown';
-                const utilPct = p.isOverBudget ? `OVER by ₹${p.overBudgetBy?.toLocaleString()}` : `${Math.round((p.budgetUtilization || 0) * 100)}%`;
-                console.log(`      - ${p.category}: ${transportName} - ₹${p.totalCost.toLocaleString()} (${utilPct}, score ${p.score})`);
+                const util = p.isOverBudget
+                    ? `OVER ₹${p.overBudgetBy?.toLocaleString()}`
+                    : `${Math.round((p.budgetUtilization || 0) * 100)}%`;
+                console.log(`      - ${p.category}: ${p.selections.transport.name} — ₹${p.totalCost.toLocaleString()} (${util})`);
             });
 
         } else if (overBudgetPlans.length > 0) {
