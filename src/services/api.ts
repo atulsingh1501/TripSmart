@@ -352,6 +352,11 @@ export interface ActivityOption {
   reviews: number;
   location: string;
   timeSlot?: string;
+  time?: string;
+  cost?: number;
+  costLabel?: string;
+  activity?: string;
+  title?: string;
 }
 
 export interface DayItinerary {
@@ -602,28 +607,45 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
           return {
             id: `day${day.day}-transport`,
             name: `${flightOption.airline} ${flightOption.id}`, // Use specific airline/train name
+            title: `${flightOption.airline} ${flightOption.id}`,
+            activity: `${flightOption.airline} ${flightOption.id}`,
             type: 'transport',
             duration: durationStr,
             price: flightOption.price,
+            cost: flightOption.price,
+            costLabel: 'Included in transport',
             description: `Travel to ${destinationName} (${durationStr})`,
             rating: 4.5,
             reviews: 100,
             location: sourceName,
             timeSlot: flightOption.departureTime,
+            time: flightOption.departureTime,
           };
         }
+
+        const baseCost = a.details?.entryFee ?? 0;
+        const normalizedCost = typeof baseCost === 'number' ? baseCost : 0;
+        const computedCostLabel =
+          normalizedCost === 0
+            ? (a.type === 'attraction' ? 'Free entry' : undefined)
+            : undefined;
 
         return {
           id: `day${day.day}-act${aIdx}`,
           name: a.activity,
+          title: a.activity,
+          activity: a.activity,
           type: a.type,
-          duration: '2 hours',
-          price: 0,
+          duration: a.details?.duration || '2 hours',
+          price: normalizedCost,
+          cost: normalizedCost,
+          costLabel: computedCostLabel,
           description: a.details?.description || a.activity,
           rating: 4.5,
           reviews: 100,
           location: destinationName,
           timeSlot: a.time,
+          time: a.time,
         };
       });
 

@@ -63,7 +63,7 @@ export default function TripDetailsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Get trip plan from navigation state
-  const { tripPlan, formData } = location.state || {};
+  const { tripPlan, formData, arrivalInfo } = location.state || {};
 
   // If no trip plan data, redirect back
   if (!tripPlan) {
@@ -102,22 +102,62 @@ export default function TripDetailsPage() {
   // Build itinerary display from plan data - use backend activities directly
   // With fallback for empty/missing itinerary
   const buildItineraryDays = () => {
+    const isOvernightArrival = Boolean(arrivalInfo?.isNextDayArrival);
+
     if (plan.itinerary && plan.itinerary.length > 0) {
-      return plan.itinerary.map((day: any) => ({
+      const normalizedDays = plan.itinerary.map((day: any) => ({
         day: day.day,
         date: day.date || '',
         title: day.title || `Day ${day.day}`,
         activities: (day.activities || []).map((activity: any) => ({
-          time: activity.time || '',
+          time: activity.time || activity.timeSlot || '',
           type: activity.type || 'activity',
           title: activity.activity || activity.name || activity.title || 'Activity',
           description: activity.description || '',
           duration: activity.duration || '',
-          cost: activity.cost ?? null,  // Use null to distinguish from 0
+          cost:
+            activity.cost ??
+            activity.price ??
+            ((activity.type === 'accommodation' && /check-?in/i.test(activity.activity || activity.title || activity.name || ''))
+              ? (plan.hotel?.pricePerNight ?? null)
+              : null),
           status: activity.costLabel,
           icon: getActivityIcon(activity.type),
         })).filter((a: any) => a.title),
       }));
+
+      if (!isOvernightArrival || normalizedDays.length === 0) {
+        return normalizedDays;
+      }
+
+      const firstDay = normalizedDays[0];
+      const carryCheckIn = firstDay.activities.find((a: any) =>
+        a.type === 'accommodation' && /check-?in/i.test(a.title || '')
+      );
+
+      firstDay.activities = firstDay.activities.filter((a: any) =>
+        a.type === 'transport' ||
+        a.type === 'travel' ||
+        /arriv|depart|travel|train|flight/i.test(a.title || '')
+      );
+      firstDay.title = 'Transit Day';
+
+      if (normalizedDays[1] && carryCheckIn) {
+        const hasCheckInAlready = normalizedDays[1].activities.some((a: any) =>
+          a.type === 'accommodation' && /check-?in/i.test(a.title || '')
+        );
+        if (!hasCheckInAlready) {
+          normalizedDays[1].activities.unshift({
+            ...carryCheckIn,
+            time: arrivalInfo?.arrivalTime || carryCheckIn.time || 'Morning',
+            cost: carryCheckIn.cost ?? plan.hotel?.pricePerNight ?? null,
+            status: carryCheckIn.status || 'Per Night',
+            icon: Hotel,
+          });
+        }
+      }
+
+      return normalizedDays;
     }
 
     // Fallback: Generate basic itinerary structure
@@ -294,10 +334,24 @@ export default function TripDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <MapBackground
+          origin={formData?.origin}
+          destination={formData?.destination}
+          stops={formData?.stops || []}
+          showDirectDistance
+          flightPaths={routePreview.flightPaths}
+          trainPaths={routePreview.trainPaths}
+        />
+      </div>
+      <div className="fixed inset-0 z-10 bg-background/80 pointer-events-none" />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="fixed top-0 left-0 right-0 z-30">
+        <Navigation />
+      </div>
+
+      <div className="relative z-20 container mx-auto max-w-6xl px-4 py-8 mt-16">
         {/* Back Button */}
         <Button
           variant="ghost"
@@ -356,31 +410,10 @@ export default function TripDetailsPage() {
           </div>
         </div>
 
-        <Card className="mb-8 overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-lg">Interactive Route Map</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative h-72 rounded-xl overflow-hidden border bg-muted/20">
-              <MapBackground
-                origin={formData?.origin}
-                destination={formData?.destination}
-                stops={formData?.stops || []}
-                showDirectDistance
-                flightPaths={routePreview.flightPaths}
-                trainPaths={routePreview.trainPaths}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Route visualization includes selected plan transport and becomes even more informative for multi-stop itineraries.
-            </p>
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="bg-background/90 backdrop-blur-md">
               <CardHeader>
                 <CardTitle>Day-by-Day Itinerary</CardTitle>
               </CardHeader>
@@ -452,7 +485,7 @@ export default function TripDetailsPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Price Breakdown */}
-            <Card>
+            <Card className="bg-background/90 backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <IndianRupee className="h-5 w-5" />
@@ -504,7 +537,7 @@ export default function TripDetailsPage() {
             </Card>
 
             {/* Trip Summary */}
-            <Card>
+            <Card className="bg-background/90 backdrop-blur-md">
               <CardHeader>
                 <CardTitle>Trip Highlights</CardTitle>
               </CardHeader>
@@ -549,7 +582,7 @@ export default function TripDetailsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-background/90 backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="text-base">Booking Confirmation Section</CardTitle>
               </CardHeader>
@@ -558,14 +591,15 @@ export default function TripDetailsPage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => navigate('/booking-confirmation', { state: { tripPlan: plan, formData } })}
+                  onClick={handleBookTrip}
+                  disabled={isSaving}
                 >
-                  Proceed To Booking Confirmation
+                  {isSaving ? 'Saving...' : 'Save And Confirm Plan'}
                 </Button>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-background/90 backdrop-blur-md">
               <CardHeader>
                 <CardTitle className="text-base">Detailed Transport Information</CardTitle>
               </CardHeader>
@@ -608,7 +642,7 @@ export default function TripDetailsPage() {
             </Card>
 
             {/* Important Notes */}
-            <Card className="bg-primary/5 border-primary/20">
+            <Card className="bg-primary/10 backdrop-blur-md border-primary/20">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <ShieldAlert className="h-4 w-4" />

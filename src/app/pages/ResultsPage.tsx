@@ -63,10 +63,10 @@ export default function ResultsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sortBy, setSortBy] = useState('recommended');
-  const [expandedPlan, setExpandedPlan] = useState<number | null>(null);
   const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null);
   const [shortlistedPlanIds, setShortlistedPlanIds] = useState<number[]>([]);
   const [comparePlanIds, setComparePlanIds] = useState<number[]>([]);
+  const [rightPanelMode, setRightPanelMode] = useState<'details' | 'compare' | null>(null);
 
   // Get trip plans from navigation state or use defaults
   const {
@@ -99,12 +99,16 @@ export default function ResultsPage() {
     if (!selectedTripPlan) return;
     toast.success('Opening itinerary workspace...');
     setTimeout(() => {
-      navigate(`/trip-details/${planId}`, { state: { tripPlan: selectedTripPlan, formData } });
+      navigate(`/trip-details/${planId}`, {
+        state: {
+          tripPlan: selectedTripPlan,
+          formData,
+          arrivalInfo,
+          adjustedNights,
+          isReturnTrip,
+        },
+      });
     }, 350);
-  };
-
-  const toggleExpand = (id: number) => {
-    setExpandedPlan(expandedPlan === id ? null : id);
   };
 
   const toggleShortlist = (planId: number) => {
@@ -121,24 +125,29 @@ export default function ResultsPage() {
   const toggleCompare = (planId: number) => {
     setComparePlanIds((current) => {
       if (current.includes(planId)) {
-        return current.filter((id) => id !== planId);
+        const next = current.filter((id) => id !== planId);
+        if (next.length === 0 && rightPanelMode === 'compare') {
+          setRightPanelMode(null);
+        }
+        return next;
       }
       if (current.length >= 2) {
         toast.info('You can compare up to 2 plans at once');
         return current;
       }
+      setRightPanelMode('compare');
       return [...current, planId];
     });
   };
 
   const focusedPlan = useMemo(() => {
-    const fallback = sortedPlans[0]?.id ?? null;
-    const selectedId = focusedPlanId ?? fallback;
-    return sortedPlans.find((plan) => plan.id === selectedId) ?? sortedPlans[0] ?? null;
+    if (focusedPlanId == null) return null;
+    return sortedPlans.find((plan) => plan.id === focusedPlanId) ?? null;
   }, [focusedPlanId, sortedPlans]);
 
+  const mapPlan = focusedPlan ?? sortedPlans[0] ?? null;
   const comparePlans = sortedPlans.filter((p) => comparePlanIds.includes(p.id));
-  const focusedRoute = focusedPlan ? getPlanRoutePreview(focusedPlan, formData) : null;
+  const focusedRoute = mapPlan ? getPlanRoutePreview(mapPlan, formData) : null;
 
   // If no plans available, show message
   if (!tripPlans || tripPlans.length === 0) {
@@ -159,10 +168,26 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-20">
-      <Navigation />
+    <div className="relative min-h-screen">
+      {focusedRoute && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <MapBackground
+            origin={formData?.origin}
+            destination={formData?.destination}
+            stops={formData?.stops || []}
+            showDirectDistance
+            flightPaths={focusedRoute.flightPaths}
+            trainPaths={focusedRoute.trainPaths}
+          />
+        </div>
+      )}
+      <div className="fixed inset-0 z-10 bg-background/75 pointer-events-none" />
 
-      <main className="container mx-auto mt-8 px-4">
+      <div className="fixed top-0 left-0 right-0 z-30">
+        <Navigation />
+      </div>
+
+      <main className="relative z-20 container mx-auto mt-20 px-4 pb-20">
         {/* Header & Filters */}
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
           <div>
@@ -241,46 +266,6 @@ export default function ResultsPage() {
           </Card>
         )}
 
-        {focusedPlan && focusedRoute && (
-          <Card className="mb-6 overflow-hidden">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <CardTitle className="text-lg">Interactive Route Map</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Showing route for {focusedPlan.name}. This view becomes more useful when you add multiple stops.
-                  </p>
-                </div>
-                <Badge variant="outline">Focused plan: {focusedPlan.badge}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative h-72 rounded-xl overflow-hidden border bg-muted/20">
-                <MapBackground
-                  origin={formData?.origin}
-                  destination={formData?.destination}
-                  stops={formData?.stops || []}
-                  showDirectDistance
-                  flightPaths={focusedRoute.flightPaths}
-                  trainPaths={focusedRoute.trainPaths}
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Map legend</span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block h-0.5 w-6 rounded bg-sky-400" /> Flight path
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block h-0.5 w-6 rounded bg-orange-400" style={{ borderTop: '2px dashed' }} /> Train path
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="inline-block h-0.5 w-6 rounded bg-blue-500" style={{ borderTop: '2px dashed' }} /> Through stops
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Notice when activities are not included */}
         {!includeActivities && (
           <div className="mb-6 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-center gap-3">
@@ -294,32 +279,9 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {comparePlans.length === 2 && (
-          <Card className="mb-6 border-primary/30">
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Compare</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              {comparePlans.map((plan) => (
-                <div key={plan.id} className="rounded-lg border p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="font-semibold">{plan.name}</p>
-                    <Badge variant="secondary">{plan.badge}</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{formatINR(plan.price)} total • {plan.rating.toFixed(1)} rating</p>
-                  <p className="text-xs text-muted-foreground">
-                    Transport: {formatINR(plan.breakdown.transport)} • Stay: {formatINR(plan.breakdown.accommodation)}
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Trip Plans */}
-        <div className="space-y-6">
-          {sortedPlans.map((plan) => {
-            const isExpanded = expandedPlan === plan.id;
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="space-y-4 lg:col-span-7">
+            {sortedPlans.map((plan) => {
             const isShortlisted = shortlistedPlanIds.includes(plan.id);
             const isCompared = comparePlanIds.includes(plan.id);
             const badgeColors: Record<number, string> = {
@@ -334,12 +296,12 @@ export default function ResultsPage() {
             };
 
             return (
-              <Card key={plan.id} className={`border-2 bg-background shadow-sm ${borderColors[plan.id] || 'border-primary/30'}`}>
+              <Card key={plan.id} className={`border-2 bg-background/92 backdrop-blur-md shadow-sm ${borderColors[plan.id] || 'border-primary/30'}`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                        <CardTitle className="text-xl">{plan.name}</CardTitle>
                         <Badge className={`${badgeColors[plan.id] || 'bg-primary'} text-white`}>{plan.badge}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -358,7 +320,7 @@ export default function ResultsPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-3xl font-bold text-primary">
+                      <div className="text-2xl font-bold text-primary">
                         {formatINR(plan.price)}
                       </div>
                       <div className="text-sm text-muted-foreground">Total for all</div>
@@ -419,147 +381,6 @@ export default function ResultsPage() {
                         </Badge>
                       ))}
                     </div>
-
-                    {/* Expanded Details */}
-                    {isExpanded && (
-                      <div className="space-y-6 pt-4 border-t animate-in slide-in-from-top-2">
-                        {/* Cost Breakdown */}
-                        <div>
-                          <h4 className="font-semibold mb-3 flex items-center gap-2">
-                            <IndianRupee className="h-4 w-4" /> Cost Breakdown
-                          </h4>
-                          <div className={`grid gap-2 ${includeActivities ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
-                            <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground">Transport</div>
-                              <div className="font-semibold">{formatINR(plan.breakdown?.transport || 0)}</div>
-                            </div>
-                            <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground">Stay</div>
-                              <div className="font-semibold">{formatINR(plan.breakdown?.accommodation || 0)}</div>
-                            </div>
-                            {/* Only show Activities when included */}
-                            {includeActivities && (
-                              <div className="bg-orange-50 dark:bg-orange-950/30 p-3 rounded-lg">
-                                <div className="text-xs text-muted-foreground">Activities</div>
-                                <div className="font-semibold">{formatINR(plan.breakdown?.activities || 0)}</div>
-                              </div>
-                            )}
-                            <div className="bg-yellow-50 dark:bg-yellow-950/30 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground">Meals</div>
-                              <div className="font-semibold">{formatINR(plan.breakdown?.meals || 0)}</div>
-                            </div>
-                            <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg">
-                              <div className="text-xs text-muted-foreground">Misc</div>
-                              <div className="font-semibold">{formatINR(plan.breakdown?.misc || 0)}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Flight & Hotel Details */}
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {/* Flight Details - only show if flight data exists */}
-                          {plan.flight?.outbound && (
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Plane className="h-4 w-4 text-primary" />
-                                <span className="font-medium">Transport</span>
-                                <span className="text-sm text-muted-foreground ml-auto">{formatINR(plan.flight?.totalPrice || 0)}</span>
-                              </div>
-                              <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Outbound</span>
-                                  <span>{plan.flight.outbound.departure || 'N/A'} → {plan.flight.outbound.arrival || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Duration</span>
-                                  <span>
-                                    {typeof plan.flight.outbound.duration === 'object'
-                                      ? `${plan.flight.outbound.duration.hours || 0}h ${plan.flight.outbound.duration.minutes || 0}m`
-                                      : (plan.flight.outbound.duration || 'N/A')
-                                    } • {plan.flight.outbound.stops === 0 ? 'Direct' : `${plan.flight.outbound.stops || 0} stop`}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Mode</span>
-                                  <span>{plan.flight.outbound.airline || 'Transport'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Class</span>
-                                  <span className="capitalize">{plan.flight.outbound.class || 'Standard'}</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {/* Hotel Details - only show if hotel data exists */}
-                          {plan.hotel?.name && (
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Hotel className="h-4 w-4 text-primary" />
-                                <span className="font-medium">Accommodation</span>
-                                <span className="text-sm text-muted-foreground ml-auto">{formatINR(plan.hotel?.totalPrice || 0)}</span>
-                              </div>
-                              <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Hotel</span>
-                                  <span>{plan.hotel.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Rating</span>
-                                  <span className="flex items-center gap-1">
-                                    {Array.from({ length: plan.hotel.stars || 3 }).map((_, i) => (
-                                      <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                    ))}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Location</span>
-                                  <span>{plan.hotel.location || 'N/A'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">Duration</span>
-                                  <span>{plan.hotel.nights || 1} nights</span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Sample Activities */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <Activity className="h-4 w-4 text-primary" />
-                            <span className="font-medium">Hotel And Activity Details</span>
-                            <span className="text-sm text-muted-foreground ml-auto">{formatINR(plan.activities?.totalPrice ?? 0)}</span>
-                          </div>
-                          <div className="grid gap-2 md:grid-cols-3">
-                            {(plan.activities?.list ?? []).slice(0, 6).map((activity, idx) => (
-                              <div key={idx} className="bg-muted/50 p-2 rounded text-sm">
-                                <div className="font-medium truncate">{activity.name}</div>
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                  <span>{activity.duration}</span>
-                                  <span>{formatINR(activity.price)}</span>
-                                </div>
-                                <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  {activity.rating?.toFixed?.(1) || '4.2'} • {activity.reviews || 120} reviews
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <div className="rounded-lg border bg-muted/40 p-3">
-                            <p className="font-medium mb-1 flex items-center gap-2"><ArrowRight className="h-4 w-4 text-primary" /> Booking Confirmation Section</p>
-                            <p className="text-sm text-muted-foreground">Once you confirm this plan, your itinerary, payment receipt, and booking ID will be generated instantly.</p>
-                          </div>
-                          <div className="rounded-lg border bg-muted/40 p-3">
-                            <p className="font-medium mb-1 flex items-center gap-2"><Headphones className="h-4 w-4 text-primary" /> Emergency Contact And Support</p>
-                            <p className="text-sm text-muted-foreground">24x7 support: +91 1800-11-TRIP • Emergency: +91 112 • In-app live assistance available.</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </CardContent>
 
@@ -572,7 +393,7 @@ export default function ResultsPage() {
                     <Scale className="mr-2 h-4 w-4" />
                     {isCompared ? 'Comparing' : 'Compare'}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => { toggleExpand(plan.id); setFocusedPlanId(plan.id); }}>
+                  <Button variant="outline" size="sm" onClick={() => { setFocusedPlanId(plan.id); setRightPanelMode('details'); }}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </Button>
@@ -583,8 +404,67 @@ export default function ResultsPage() {
                 </div>
               </Card>
             );
-          })}
+            })}
+          </div>
+
+          <div className="lg:col-span-5">
+            <div className="sticky top-24">
+              {rightPanelMode === 'details' && focusedPlan && (
+                <Card className="bg-background/92 backdrop-blur-md">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{focusedPlan.name} Details</CardTitle>
+                      <Badge variant="outline">{focusedPlan.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Click Compare to switch this panel to comparison view.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className={`grid gap-2 ${includeActivities ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                      <div className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Transport</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.transport || 0)}</div></div>
+                      <div className="bg-green-50 dark:bg-green-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Stay</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.accommodation || 0)}</div></div>
+                      {includeActivities && <div className="bg-orange-50 dark:bg-orange-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Activities</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.activities || 0)}</div></div>}
+                      <div className="bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Meals</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.meals || 0)}</div></div>
+                      <div className="bg-purple-50 dark:bg-purple-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Misc</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.misc || 0)}</div></div>
+                    </div>
+                    <Separator />
+                    <div className="space-y-2 text-sm">
+                      <p className="font-medium">Detailed Transport Information</p>
+                      <p className="text-muted-foreground">{focusedPlan.flight?.outbound?.airline || focusedPlan.flight?.outbound?.name || 'Transport'} • {focusedPlan.flight?.outbound?.class || 'Standard'}</p>
+                      <p className="text-muted-foreground">{focusedPlan.flight?.outbound?.departure || formData?.origin} ({focusedPlan.flight?.outbound?.departureTime || 'TBD'}) → {focusedPlan.flight?.outbound?.arrival || formData?.destination} ({focusedPlan.flight?.outbound?.arrivalTime || 'TBD'})</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {rightPanelMode === 'compare' && (
+                <Card className="bg-background/92 backdrop-blur-md">
+                  <CardHeader>
+                    <CardTitle className="text-base">Comparison</CardTitle>
+                    <p className="text-xs text-muted-foreground">Click View Details on any plan to replace this with detail view.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {comparePlans.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Select plans using Compare to see comparison here.</p>
+                    ) : (
+                      comparePlans.map((plan) => (
+                        <div key={plan.id} className="rounded-lg border p-3 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{plan.name}</p>
+                            <Badge variant="outline">{plan.badge}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{formatINR(plan.price)} • {plan.rating.toFixed(1)} rating</p>
+                          <p className="text-xs text-muted-foreground">Transport {formatINR(plan.breakdown.transport)} • Stay {formatINR(plan.breakdown.accommodation)}</p>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         </div>
+
+
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <Card>
