@@ -280,7 +280,7 @@ export default function ResultsPage() {
         )}
 
         <div className="grid gap-6 lg:grid-cols-12">
-          <div className="space-y-4 lg:col-span-7">
+          <div className="space-y-4 lg:col-span-6">
             {sortedPlans.map((plan) => {
             const isShortlisted = shortlistedPlanIds.includes(plan.id);
             const isCompared = comparePlanIds.includes(plan.id);
@@ -407,53 +407,111 @@ export default function ResultsPage() {
             })}
           </div>
 
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-6">
             <div className="sticky top-24">
               {rightPanelMode === 'details' && focusedPlan && (
-                <Card className="bg-background/92 backdrop-blur-md">
-                  <CardHeader>
+                <Card className="bg-background/95 backdrop-blur-md border-2 border-primary/25 shadow-lg shadow-primary/5">
+                  <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{focusedPlan.name} Details</CardTitle>
+                      <CardTitle className="text-lg">{focusedPlan.name} Details</CardTitle>
                       <Badge variant="outline">{focusedPlan.badge}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">Click Compare to switch this panel to comparison view.</p>
+                    <p className="text-sm text-muted-foreground">Click Compare to switch this panel to comparison view.</p>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className={`grid gap-2 ${includeActivities ? 'grid-cols-5' : 'grid-cols-4'}`}>
-                      <div className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Transport</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.transport || 0)}</div></div>
-                      <div className="bg-green-50 dark:bg-green-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Stay</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.accommodation || 0)}</div></div>
-                      {includeActivities && <div className="bg-orange-50 dark:bg-orange-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Activities</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.activities || 0)}</div></div>}
-                      <div className="bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Meals</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.meals || 0)}</div></div>
-                      <div className="bg-purple-50 dark:bg-purple-950/30 p-2 rounded-lg"><div className="text-[10px] text-muted-foreground">Misc</div><div className="font-semibold text-xs">{formatINR(focusedPlan.breakdown?.misc || 0)}</div></div>
+                  <CardContent className="space-y-5">
+                    <div className="rounded-xl border bg-card/70 p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-sm font-semibold">Cost Breakdown</p>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Total</p>
+                          <p className="text-base font-bold text-primary">{formatINR(focusedPlan.price)}</p>
+                        </div>
+                      </div>
+                      <div className={`grid gap-3 ${includeActivities ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                        <div className="rounded-lg border border-blue-200/70 bg-blue-50/70 p-3 dark:border-blue-900/50 dark:bg-blue-950/30">
+                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Plane className="h-3.5 w-3.5" /> Transport</div>
+                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.transport || 0)}</div>
+                        </div>
+                        <div className="rounded-lg border border-green-200/70 bg-green-50/70 p-3 dark:border-green-900/50 dark:bg-green-950/30">
+                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Hotel className="h-3.5 w-3.5" /> Stay</div>
+                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.accommodation || 0)}</div>
+                        </div>
+                        {includeActivities && (
+                          <div className="rounded-lg border border-orange-200/70 bg-orange-50/70 p-3 dark:border-orange-900/50 dark:bg-orange-950/30">
+                            <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Activity className="h-3.5 w-3.5" /> Activities</div>
+                            <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.activities || 0)}</div>
+                          </div>
+                        )}
+                        <div className="rounded-lg border border-yellow-200/70 bg-yellow-50/70 p-3 dark:border-yellow-900/50 dark:bg-yellow-950/30">
+                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><IndianRupee className="h-3.5 w-3.5" /> Meals</div>
+                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.meals || 0)}</div>
+                        </div>
+                        <div className="rounded-lg border border-purple-200/70 bg-purple-50/70 p-3 dark:border-purple-900/50 dark:bg-purple-950/30">
+                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Info className="h-3.5 w-3.5" /> Misc</div>
+                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.misc || 0)}</div>
+                        </div>
+                      </div>
                     </div>
                     <Separator />
-                    <div className="space-y-2 text-sm">
-                      <p className="font-medium">Detailed Transport Information</p>
-                      <p className="text-muted-foreground">{focusedPlan.flight?.outbound?.airline || focusedPlan.flight?.outbound?.name || 'Transport'} • {focusedPlan.flight?.outbound?.class || 'Standard'}</p>
-                      <p className="text-muted-foreground">{focusedPlan.flight?.outbound?.departure || formData?.origin} ({focusedPlan.flight?.outbound?.departureTime || 'TBD'}) → {focusedPlan.flight?.outbound?.arrival || formData?.destination} ({focusedPlan.flight?.outbound?.arrivalTime || 'TBD'})</p>
+                    <div className="rounded-xl border bg-card/70 p-4 space-y-3 text-sm">
+                      <p className="font-semibold">Detailed Transport Information</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <p className="text-xs text-muted-foreground mb-1">Operator</p>
+                          <p className="font-medium">{focusedPlan.flight?.outbound?.airline || focusedPlan.flight?.outbound?.name || 'Transport'}</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <p className="text-xs text-muted-foreground mb-1">Class</p>
+                          <p className="font-medium">{focusedPlan.flight?.outbound?.class || 'Standard'}</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <p className="text-xs text-muted-foreground mb-1">From</p>
+                          <p className="font-medium">{focusedPlan.flight?.outbound?.departure || formData?.origin} ({focusedPlan.flight?.outbound?.departureTime || 'TBD'})</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 p-3">
+                          <p className="text-xs text-muted-foreground mb-1">To</p>
+                          <p className="font-medium">{focusedPlan.flight?.outbound?.arrival || formData?.destination} ({focusedPlan.flight?.outbound?.arrivalTime || 'TBD'})</p>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               )}
 
               {rightPanelMode === 'compare' && (
-                <Card className="bg-background/92 backdrop-blur-md">
-                  <CardHeader>
-                    <CardTitle className="text-base">Comparison</CardTitle>
-                    <p className="text-xs text-muted-foreground">Click View Details on any plan to replace this with detail view.</p>
+                <Card className="bg-background/95 backdrop-blur-md border-2 border-cyan-500/25 shadow-lg shadow-cyan-500/5">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-lg">Comparison</CardTitle>
+                    <p className="text-sm text-muted-foreground">Click View Details on any plan to replace this with detail view.</p>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-4">
                     {comparePlans.length === 0 ? (
                       <p className="text-sm text-muted-foreground">Select plans using Compare to see comparison here.</p>
                     ) : (
                       comparePlans.map((plan) => (
-                        <div key={plan.id} className="rounded-lg border p-3 space-y-1">
+                        <div key={plan.id} className="rounded-xl border bg-card/70 p-4 space-y-3">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">{plan.name}</p>
+                            <p className="text-base font-semibold">{plan.name}</p>
                             <Badge variant="outline">{plan.badge}</Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">{formatINR(plan.price)} • {plan.rating.toFixed(1)} rating</p>
-                          <p className="text-xs text-muted-foreground">Transport {formatINR(plan.breakdown.transport)} • Stay {formatINR(plan.breakdown.accommodation)}</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-lg bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Total Price</p>
+                              <p className="text-sm font-semibold text-primary">{formatINR(plan.price)}</p>
+                            </div>
+                            <div className="rounded-lg bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Rating</p>
+                              <p className="text-sm font-semibold">{plan.rating.toFixed(1)} / 5</p>
+                            </div>
+                            <div className="rounded-lg bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Transport</p>
+                              <p className="text-sm font-medium">{formatINR(plan.breakdown.transport)}</p>
+                            </div>
+                            <div className="rounded-lg bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Stay</p>
+                              <p className="text-sm font-medium">{formatINR(plan.breakdown.accommodation)}</p>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}
