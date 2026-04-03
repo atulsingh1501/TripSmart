@@ -1,5 +1,5 @@
 // API Service for Backend Communication
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Generic fetch wrapper with error handling
 async function fetchAPI<T>(
