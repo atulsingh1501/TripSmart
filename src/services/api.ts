@@ -1,12 +1,19 @@
 // API Service for Backend Communication
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const rawApiUrl = import.meta.env.VITE_API_URL?.trim();
+const API_BASE_URL = (() => {
+  if (!rawApiUrl) return '/api';
+
+  const normalized = rawApiUrl.replace(/\/+$/, '');
+  return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+})();
 
 // Generic fetch wrapper with error handling
 async function fetchAPI<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}${path}`;
 
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',

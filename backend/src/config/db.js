@@ -29,8 +29,14 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error('Error connecting to MongoDB:', error.message);
-    // Don't exit - allow app to work without DB in development
-    console.log('App will continue without database connection');
+    // In production, fail fast so platform health checks clearly show DB misconfiguration.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Database is required in production. Exiting process.');
+      process.exit(1);
+    }
+
+    // Keep local development usable for non-DB endpoints.
+    console.log('App will continue without database connection (development mode)');
     return null;
   }
 };
