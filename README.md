@@ -1,11 +1,11 @@
-# TripSmart - AI Trip Planning App
+# TripSmart - Smart Trip Planning App
 
-An intelligent trip planning application that helps users plan personalized travel experiences with smart budget allocation, real-time transport options, and destination-specific recommendations.
+TripSmart helps users generate personalized trip plans with smart budget allocation, multi-modal transport choices, and destination-specific recommendations.
 
 ## ✨ Features
 
 - **Smart Budget Allocation** - Automatically distributes budget across transport, accommodation, activities, and meals
-- **Multi-Modal Transport** - Supports flights, trains, buses, and car rentals with real pricing
+- **Multi-Modal Transport** - Supports flights, trains, buses, and local transport planning
 - **Dynamic Trip Plans** - Generates Budget, Comfort, and Premium tier options
 - **Places Selection** - Choose which attractions to visit with actual entry fees displayed
 - **User Authentication** - JWT-based auth with secure session management
@@ -18,12 +18,48 @@ An intelligent trip planning application that helps users plan personalized trav
 - Vite (build tool)
 - Tailwind CSS + Radix UI
 - React Router
+- Leaflet + React-Leaflet (map rendering and route visualization)
 
 ### Backend
 - Node.js + Express
 - MongoDB + Mongoose
 - JWT Authentication
-- Real train data integration (EXP-TRAINS.json)
+- Hybrid data layer (MongoDB + curated static datasets)
+
+## 🗺️ Maps and Location Rendering
+
+- The app uses Leaflet on the frontend to render the interactive map background and route overlays.
+- We use coordinate lookup data (city names and IATA airport codes) to place:
+	- Origin marker
+	- Destination marker
+	- Stop markers
+	- Flight/train route paths and distance lines
+- Core map files:
+	- `src/app/components/MapBackground.tsx`
+	- `src/data/cityCoordinates.ts`
+
+## 🧩 What Radix UI Is and How TripSmart Uses It
+
+Radix UI is an unstyled, accessible component primitive library for React. In TripSmart, Radix provides reliable behavior and accessibility for interactive UI controls, while Tailwind handles the visual design.
+
+In this project, Radix-based components are used for:
+- Dialogs and modals (confirmations and detail overlays)
+- Dropdown menus and selects (sorting/filter inputs)
+- Tabs, accordions, popovers, tooltips, drawers
+- Form-oriented controls like checkbox, radio group, switches, and labels
+- Navigation primitives and command-style interactions
+
+Where these are implemented:
+- Component wrappers: `src/app/components/ui/`
+- Consumed across pages such as plan, results, profile, settings, and booking flows
+
+## 🏗️ Architecture (3-Tier)
+
+| Tier | Description |
+|---|---|
+| Tier 1 - Presentation Layer | React-based UI with Radix components and Tailwind styling |
+| Tier 2 - Application Layer | Express.js backend handling business logic and API requests |
+| Tier 3 - Data Layer | MongoDB for persistence plus static/demo data providers for transport and city datasets |
 
 ## 🚀 Getting Started
 
@@ -37,7 +73,7 @@ An intelligent trip planning application that helps users plan personalized trav
 1. **Clone the repository**
 ```bash
 git clone https://github.com/Sathvik5647/TripSmart.git
-cd TripSmart
+cd TripSmart-main
 ```
 
 2. **Install frontend dependencies**
@@ -61,6 +97,8 @@ JWT_SECRET=your-secure-jwt-secret
 JWT_REFRESH_SECRET=your-secure-refresh-secret
 NODE_ENV=development
 ```
+
+Optional root `.env` values can be added for frontend runtime config if needed.
 
 5. **Start the development servers**
 
@@ -117,6 +155,14 @@ TripSmart/
 - `GET /api/cities/popular` - Get popular cities
 - `GET /api/flights/search` - Search flights
 - `GET /api/trains/search` - Search trains
+- `GET /api/hotels/search` - Search hotels
+
+## 📦 Data Source Notes
+
+- Flights, buses, hotels, cities, and local attractions are currently served from curated in-repo datasets and generation logic.
+- Train search uses the backend train service and available train datasets.
+- User, trip, and auth data are persisted in MongoDB.
+- Live third-party APIs (for flight/bus/hotel inventory) are not yet integrated.
 
 ## 🧪 Development
 
@@ -129,9 +175,6 @@ cd backend && npm run dev
 
 # Build for production
 npm run build
-
-# Type check
-npm run type-check
 ```
 
 ## 📝 License
