@@ -1,5 +1,7 @@
 # TripSmart - Smart Trip Planning App
 
+> 🎓 **Minor Project — B.Tech 6th Semester**
+
 TripSmart helps users generate personalized trip plans with smart budget allocation, multi-modal transport choices, and destination-specific recommendations.
 
 ## ✨ Features
@@ -181,6 +183,13 @@ npm run build
 
 MIT License - See LICENSE file for details.
 
-## 👨‍💻 Author
+## 👨‍💻 Team
 
-Created by Sathvik
+This project was developed as a **Minor Project for B.Tech 6th Semester**.
+
+| Name | GitHub |
+|------|--------|
+| Atul Singh | [@atulsingh1501](https://github.com/atulsingh1501) |
+| Sathvik | [@Sathvik5647](https://github.com/Sathvik5647) |
+| Prakhar Banshal | — |
+| Rudraksh Rana | [@Rudraksh-Rana](https://github.com/Rudraksh-Rana) |
