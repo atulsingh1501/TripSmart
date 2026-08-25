@@ -691,7 +691,7 @@ export default function PlanTripPage() {
 
       {/* ── Floating Glass Panel (right side) ── */}
       <aside className="absolute top-0 right-0 h-full z-20 flex items-stretch pt-16 pb-4 pr-4 pl-0 pointer-events-none">
-        <div className="glass-panel rounded-2xl w-[420px] max-w-[95vw] flex flex-col pointer-events-auto shadow-2xl overflow-hidden">
+        <div className="glass-panel plan-trip-panel rounded-2xl w-[420px] max-w-[95vw] flex flex-col pointer-events-auto shadow-2xl overflow-hidden">
 
           {/* Panel Header */}
           <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10">

@@ -418,6 +418,17 @@ export interface TripPlanData {
     activities: number;
     meals: number;
     misc: number;
+    nightsUsed?: number;
+    overnightCount?: number;
+    usableDays?: number;
+    nightsAtDestination?: number;
+  };
+  /** Per-plan arrival info (transport-aware) */
+  arrivalInfo?: {
+    isNextDayArrival?: boolean;
+    departureTime?: string;
+    arrivalTime?: string;
+    arrivalDate?: string;
   };
 }
 
@@ -426,12 +437,21 @@ interface BackendPlanData {
   id: string;
   tier: string;
   description: string;
-  // NEW: Per-plan nights (for overnight travel adjustment)
   nights?: number;
+  requestedNights?: number;
+  arrivalInfo?: {
+    isNextDayArrival?: boolean;
+    departureTime?: string;
+    arrivalTime?: string;
+    arrivalDate?: string;
+  };
   transport: {
-    type: string;
-    details: any;
+    type?: string;
+    mode?: string;
+    details?: any;
     class?: string;
+    overnightCount?: number;
+    name?: string;
   };
   hotel: {
     name: string;
@@ -449,6 +469,22 @@ interface BackendPlanData {
     miscellaneous: number;
     total: number;
   };
+  breakdown?: {
+    transportTotal?: number;
+    accommodationTotal?: number;
+    foodTotal?: number;
+    activityTotal?: number;
+    nightsUsed?: number;
+    overnightCount?: number;
+    usableDays?: number;
+    nightsAtDestination?: number;
+  };
+  itinerary?: Array<{
+    day: number;
+    title: string;
+    date?: string;
+    activities: Array<{ time?: string; activity?: string; type?: string; details?: any; name?: string; title?: string }>;
+  }>;
   highlights: string[];
 }
 
@@ -541,58 +577,61 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
     'Budget': { name: 'Budget Saver', badge: 'Best Value', badgeColor: 'bg-green-500', rating: 4.2 },
     'Comfort': { name: 'Comfort Choice', badge: 'Popular', badgeColor: 'bg-primary', rating: 4.5 },
     'Premium': { name: 'Premium Experience', badge: 'Top Rated', badgeColor: 'bg-purple-500', rating: 4.8 },
+    'budget': { name: 'Budget Saver', badge: 'Best Value', badgeColor: 'bg-green-500', rating: 4.2 },
+    'comfort': { name: 'Comfort Choice', badge: 'Popular', badgeColor: 'bg-primary', rating: 4.5 },
+    'premium': { name: 'Premium Experience', badge: 'Top Rated', badgeColor: 'bg-purple-500', rating: 4.8 },
   };
 
-  // Safely extract source and destination names with fallbacks
   const sourceName = backendData.source?.name || 'Origin';
   const destinationName = backendData.destination?.name || 'Destination';
   const travelersCount = backendData.travelers || 1;
   const globalNightsCount = backendData.nights || 1;
 
-  const plans: TripPlanData[] = (backendData.plans || []).map((plan, index) => {
-    const config = tierConfig[plan.tier] || tierConfig['Comfort'];
+  const transformSinglePlan = (plan: BackendPlanData, index: number): TripPlanData => {
+    const tierKey = plan.tier || 'Comfort';
+    const config = tierConfig[tierKey] || tierConfig['Comfort'];
     const transportDetails = plan.transport?.details || {};
-    // Use per-plan nights if available (for adjusted overnight travel), otherwise global nights
-    const planNightsCount = plan.nights !== undefined ? plan.nights : globalNightsCount;
+    const planNightsCount = plan.nights ?? plan.breakdown?.nightsUsed ?? globalNightsCount;
+    const planBreakdown = plan.breakdown || {};
 
-    // Determine transport mode from backend data - check multiple sources
     const transportMode = (
-      plan.transport?.mode === 'train' || 
-      plan.transport?.type === 'train' || 
+      plan.transport?.mode === 'train' ||
+      plan.transport?.type === 'train' ||
       transportDetails.trainNumber
     ) ? 'train' as const : 'flight' as const;
 
-    // Transform transport to flight format
     const flightOption: FlightOption = {
       id: transportDetails.flightNumber || transportDetails.trainNumber || plan.transport?.name || `${plan.tier}-${index}`,
       airline: transportDetails.airline || transportDetails.trainName || plan.transport?.name || 'Unknown',
       departure: sourceName,
       arrival: destinationName,
-      departureTime: transportDetails.departure?.time || transportDetails.departure || '09:00',
-      arrivalTime: transportDetails.arrival?.time || transportDetails.arrival || '11:00',
+      departureTime: transportDetails.departure?.time || transportDetails.departure || plan.arrivalInfo?.departureTime || '09:00',
+      arrivalTime: transportDetails.arrival?.time || transportDetails.arrival || plan.arrivalInfo?.arrivalTime || '11:00',
       duration: transportDetails.duration || '2h',
       stops: transportDetails.stops || 0,
       price: Math.round((plan.costs?.transport || 0) / 2 / travelersCount),
       class: plan.transport?.class || 'economy',
-      // Set transport mode for train vs flight identification
       mode: transportMode,
       type: transportMode,
       name: transportDetails.trainName || transportDetails.airline || plan.transport?.name || 'Unknown',
     };
 
-    // Generate sample activities based on destination
-    const activities: ActivityOption[] = (backendData.itinerary || [])
+    const planItinerarySource = (plan.itinerary && plan.itinerary.length > 0)
+      ? plan.itinerary
+      : (backendData.itinerary || []);
+
+    const activities: ActivityOption[] = planItinerarySource
       .slice(1, -1)
       .flatMap((day, dayIndex) =>
         (day.activities || [])
           .filter(a => a.type === 'attraction')
           .map((a, actIndex) => ({
             id: `act-${dayIndex}-${actIndex}`,
-            name: a.activity,
+            name: a.activity || a.name || a.title || 'Activity',
             type: 'Sightseeing',
             duration: a.details?.duration || '2-3 hours',
             price: a.details?.entryFee ?? 0,
-            description: a.details?.description || `Visit ${a.activity}`,
+            description: a.details?.description || `Visit ${a.activity || a.name}`,
             rating: 4.5 + Math.random() * 0.4,
             reviews: Math.floor(100 + Math.random() * 500),
             location: destinationName,
@@ -600,20 +639,17 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
           }))
       );
 
-    // Create itinerary with PLAN-SPECIFIC transport details
-    const itinerary: DayItinerary[] = (backendData.itinerary || []).map((day, dayIdx) => {
-      // Create a deep copy of activities to modify
+    const itinerary: DayItinerary[] = planItinerarySource.map((day, dayIdx) => {
       const dayActivities = (day.activities || []).map((a, aIdx) => {
-        // If this is the transport activity (Day 1 departure), override with current plan's transport
-        if ((day.day === 1 && a.type === 'transport') || (a.activity.includes('Departure') && a.type === 'transport')) {
-          // Format duration to string if it's an object
+        const activityName = a.activity || a.name || a.title || '';
+        if ((day.day === 1 && a.type === 'transport') || (activityName.includes('Departure') && a.type === 'transport')) {
           const durationStr = typeof flightOption.duration === 'string'
             ? flightOption.duration
-            : `${flightOption.duration.hours}h ${flightOption.duration.minutes}m`;
+            : `${(flightOption.duration as any).hours}h ${(flightOption.duration as any).minutes}m`;
 
           return {
             id: `day${day.day}-transport`,
-            name: `${flightOption.airline} ${flightOption.id}`, // Use specific airline/train name
+            name: `${flightOption.airline} ${flightOption.id}`,
             title: `${flightOption.airline} ${flightOption.id}`,
             activity: `${flightOption.airline} ${flightOption.id}`,
             type: 'transport',
@@ -639,15 +675,15 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
 
         return {
           id: `day${day.day}-act${aIdx}`,
-          name: a.activity,
-          title: a.activity,
-          activity: a.activity,
-          type: a.type,
+          name: activityName || 'Activity',
+          title: activityName || 'Activity',
+          activity: activityName || 'Activity',
+          type: a.type || 'activity',
           duration: a.details?.duration || '2 hours',
           price: normalizedCost,
           cost: normalizedCost,
           costLabel: computedCostLabel,
-          description: a.details?.description || a.activity,
+          description: a.details?.description || activityName || 'Activity',
           rating: 4.5,
           reviews: 100,
           location: destinationName,
@@ -658,7 +694,8 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
 
       return {
         day: day.day,
-        date: new Date(new Date(backendData.startDate || new Date()).getTime() + dayIdx * 24 * 60 * 60 * 1000)
+        title: day.title,
+        date: day.date || new Date(new Date(backendData.startDate || new Date()).getTime() + dayIdx * 24 * 60 * 60 * 1000)
           .toISOString()
           .split('T')[0],
         city: destinationName,
@@ -671,6 +708,11 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
       };
     });
 
+    const nightsUsed = planBreakdown.nightsUsed ?? planNightsCount;
+    const overnightCount = planBreakdown.overnightCount ?? plan.transport?.overnightCount ?? 0;
+    const usableDays = planBreakdown.usableDays ?? Math.max(1, nightsUsed + 1);
+    const totalTripDays = overnightCount + usableDays;
+
     return {
       id: index + 1,
       name: config.name,
@@ -678,9 +720,8 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
       badgeColor: config.badgeColor,
       price: plan.costs?.total || 0,
       rating: config.rating,
-      duration: `${planNightsCount + 1} days`,  // Changed from nights to days (nights + 1)
+      duration: `${totalTripDays} days`,
       highlights: plan.highlights || [],
-      // Transport mode identification
       transport: {
         mode: transportMode,
         type: transportMode,
@@ -712,13 +753,12 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
         roomType: plan.hotel?.roomType || 'Standard',
       },
       activities: {
-        // Use destinationAttractions from backend (with real entry fees) when available
         list: activities.length > 0 ? activities : (((backendData as any).destinationAttractions) || []).slice(0, 6).map((attr: any, idx: number) => ({
           id: `attraction-${idx}`,
           name: attr.name,
           type: attr.type || 'Sightseeing',
           duration: attr.duration || '2-3 hours',
-          price: attr.entryFee || 0, // Use actual entry fee (Hussain Sagar = ₹0, Charminar = ₹25)
+          price: attr.entryFee || 0,
           description: `Visit ${attr.name}`,
           rating: 4.5,
           reviews: 250,
@@ -736,14 +776,23 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
       },
       itinerary,
       breakdown: {
-        transport: plan.costs?.transport || 0,
-        accommodation: plan.costs?.accommodation || 0,
-        activities: plan.costs?.activities || 0,
-        meals: plan.costs?.meals || 0,
+        transport: plan.costs?.transport || planBreakdown.transportTotal || 0,
+        accommodation: plan.costs?.accommodation || planBreakdown.accommodationTotal || 0,
+        activities: plan.costs?.activities || planBreakdown.activityTotal || 0,
+        meals: plan.costs?.meals || planBreakdown.foodTotal || 0,
         misc: plan.costs?.miscellaneous || 0,
+        nightsUsed,
+        overnightCount,
+        usableDays,
+        nightsAtDestination: planBreakdown.nightsAtDestination ?? nightsUsed,
       },
+      arrivalInfo: plan.arrivalInfo,
     };
-  });
+  };
+
+  const plans: TripPlanData[] = (backendData.plans || []).map((plan, index) =>
+    transformSinglePlan(plan, index)
+  );
 
   return {
     id: backendData.id,

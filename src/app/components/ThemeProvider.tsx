@@ -11,24 +11,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('theme') as Theme;
-      if (stored) return stored;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return 'light';
-  });
+  // Light mode locked — dark mode will be worked on after light theme is complete
+  const [theme] = useState<Theme>('light');
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    root.classList.add('light');
+    localStorage.setItem('theme', 'light');
+  }, []);
+
+  const setTheme = (_theme: Theme) => {
+    // Intentionally no-op until dark mode is ready
+  };
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    // Intentionally no-op until dark mode is ready
   };
 
   return (
@@ -45,4 +43,3 @@ export function useTheme() {
   }
   return context;
 }
-

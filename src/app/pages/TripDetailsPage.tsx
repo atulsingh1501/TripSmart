@@ -80,6 +80,7 @@ export default function TripDetailsPage() {
   }
 
   const plan: TripPlanData = tripPlan;
+  const planArrivalInfo = plan.arrivalInfo || arrivalInfo;
 
   // Determine if transport is train or flight - check multiple sources
   const isTrainTransport =
@@ -102,10 +103,14 @@ export default function TripDetailsPage() {
   // Build itinerary display from plan data - use backend activities directly
   // With fallback for empty/missing itinerary
   const buildItineraryDays = () => {
-    const isOvernightArrival = Boolean(arrivalInfo?.isNextDayArrival);
+    const overnightCount = plan.breakdown?.overnightCount ?? 0;
+    const usableDays = plan.breakdown?.usableDays ?? (
+      plan.breakdown?.nightsUsed != null ? plan.breakdown.nightsUsed + 1 : null
+    );
+    const expectedDays = usableDays != null ? overnightCount + usableDays : null;
 
-    if (plan.itinerary && plan.itinerary.length > 0) {
-      const normalizedDays = plan.itinerary.map((day: any) => ({
+    const normalizeItinerary = (days: any[]) =>
+      days.map((day: any) => ({
         day: day.day,
         date: day.date || '',
         title: day.title || `Day ${day.day}`,
@@ -126,64 +131,129 @@ export default function TripDetailsPage() {
         })).filter((a: any) => a.title),
       }));
 
-      if (!isOvernightArrival || normalizedDays.length === 0) {
-        return normalizedDays;
-      }
-
-      const firstDay = normalizedDays[0];
-      const carryCheckIn = firstDay.activities.find((a: any) =>
-        a.type === 'accommodation' && /check-?in/i.test(a.title || '')
-      );
-
-      firstDay.activities = firstDay.activities.filter((a: any) =>
-        a.type === 'transport' ||
-        a.type === 'travel' ||
-        /arriv|depart|travel|train|flight/i.test(a.title || '')
-      );
-      firstDay.title = 'Transit Day';
-
-      if (normalizedDays[1] && carryCheckIn) {
-        const hasCheckInAlready = normalizedDays[1].activities.some((a: any) =>
-          a.type === 'accommodation' && /check-?in/i.test(a.title || '')
+    if (plan.itinerary && plan.itinerary.length > 0) {
+      if (expectedDays !== null && plan.itinerary.length !== expectedDays) {
+        console.warn(
+          `[TripDetails] Itinerary length mismatch: backend returned ${plan.itinerary.length} days ` +
+          `but expected ${expectedDays} (overnightCount=${overnightCount} + usableDays=${usableDays}). Using fallback.`
         );
-        if (!hasCheckInAlready) {
-          normalizedDays[1].activities.unshift({
-            ...carryCheckIn,
-            time: arrivalInfo?.arrivalTime || carryCheckIn.time || 'Morning',
-            cost: carryCheckIn.cost ?? plan.hotel?.pricePerNight ?? null,
-            status: carryCheckIn.status || 'Per Night',
-            icon: Hotel,
-          });
-        }
+      } else {
+        return normalizeItinerary(plan.itinerary);
       }
-
-      return normalizedDays;
     }
 
-    // Fallback: Generate basic itinerary structure
-    const nights = parseInt(plan.duration?.match(/\d+/)?.[0] || '1');
-    const totalDays = nights + 1;
+    // Fallback: generate tabs = overnightCount + usableDays
+    const transportName =
+      plan.flight?.outbound?.airline ||
+      plan.flight?.outbound?.name ||
+      plan.transport?.name ||
+      transportLabel;
+    const sourceCity = formData?.origin || plan.flight?.outbound?.departure || 'Origin';
+    const destCity = formData?.destination || plan.flight?.outbound?.arrival || 'Destination';
+    const departureTime = plan.flight?.outbound?.departureTime || planArrivalInfo?.departureTime || '09:00';
+    const arrivalTime = plan.flight?.outbound?.arrivalTime || planArrivalInfo?.arrivalTime || '12:00';
+    const transportDuration = formatDuration(plan.flight?.outbound?.duration) || '2h';
+    const totalDays = (usableDays ?? parseInt(plan.duration?.match(/\d+/)?.[0] || '3')) + overnightCount;
     const fallbackDays = [];
 
-    for (let i = 1; i <= totalDays; i++) {
-      fallbackDays.push({
-        day: i,
-        date: '',
-        title: i === 1 ? 'Arrival Day' : i === totalDays ? 'Departure Day' : `Day ${i} - Explore`,
-        activities: i === 1 ? [
-          { time: 'Morning', type: 'transport', title: 'Travel to destination', description: 'Departure from origin', duration: '', cost: null, status: '', icon: TransportIcon },
-          { time: 'Afternoon', type: 'accommodation', title: 'Hotel Check-in', description: '', duration: '', cost: plan.hotel?.pricePerNight ?? null, status: 'Per Night', icon: Hotel },
-        ] : i === totalDays ? [
-          { time: 'Morning', type: 'accommodation', title: 'Hotel Check-out', description: '', duration: '', cost: null, status: '', icon: Hotel },
-          { time: 'Afternoon', type: 'transport', title: 'Return journey', description: 'Travel back to origin', duration: '', cost: null, status: '', icon: TransportIcon },
-        ] : [
-          { time: '09:00', type: 'meal', title: 'Breakfast', description: '', duration: '', cost: 200, status: '', icon: Utensils },
-          { time: '10:00', type: 'attraction', title: 'Explore local attractions', description: 'Visit popular sites', duration: '3 hours', cost: null, status: '', icon: Camera },
-          { time: '13:00', type: 'meal', title: 'Lunch', description: '', duration: '', cost: 300, status: '', icon: Utensils },
-          { time: '15:00', type: 'leisure', title: 'Free time', description: 'Shopping or relaxation', duration: '2 hours', cost: null, status: '', icon: Coffee },
-          { time: '19:00', type: 'meal', title: 'Dinner', description: '', duration: '', cost: 500, status: '', icon: Utensils },
-        ]
-      });
+    for (let day = 1; day <= totalDays; day++) {
+      if (day <= overnightCount) {
+        fallbackDays.push({
+          day,
+          date: '',
+          title: `Day ${day} — In Transit`,
+          activities: [
+            {
+              time: day === 1 ? departureTime : 'All day',
+              type: 'transport',
+              title: `${transportName}: ${sourceCity} → ${destCity}`,
+              description: day === 1
+                ? `Duration: ${transportDuration} • Overnight journey (leg ${day} of ${overnightCount})`
+                : `Continuing overnight journey (leg ${day} of ${overnightCount})`,
+              duration: transportDuration,
+              cost: day === 1 ? plan.breakdown?.transport ?? null : null,
+              status: '',
+              icon: TransportIcon,
+            },
+            {
+              time: 'Night',
+              type: 'travel',
+              title: 'In transit (no hotel stay)',
+              description: `Sleeping on ${transportLabel.toLowerCase()}`,
+              duration: '',
+              cost: null,
+              status: '',
+              icon: TransportIcon,
+            },
+          ],
+        });
+        continue;
+      }
+
+      const usableDayIndex = day - overnightCount;
+      const isFirstUsable = usableDayIndex === 1;
+      const isLastUsable = usableDayIndex === (usableDays ?? totalDays - overnightCount);
+
+      if (isFirstUsable && isLastUsable) {
+        fallbackDays.push({
+          day,
+          date: '',
+          title: overnightCount > 0 ? 'Arrival & Departure Day' : 'Arrival Day',
+          activities: [
+            ...(overnightCount === 0 ? [{
+              time: departureTime, type: 'transport', title: `${transportName}: ${sourceCity} → ${destCity}`,
+              description: `Duration: ${transportDuration}`, duration: transportDuration, cost: plan.breakdown?.transport ?? null, status: '', icon: TransportIcon,
+            }] : []),
+            ...(overnightCount > 0 ? [{
+              time: arrivalTime, type: 'travel', title: `Arrive at ${destCity}`, description: '', duration: '', cost: null, status: '', icon: MapPin,
+            }] : []),
+            { time: '14:00', type: 'accommodation', title: 'Hotel Check-in', description: plan.hotel?.name || '', duration: '', cost: plan.hotel?.pricePerNight ?? null, status: 'Per Night', icon: Hotel },
+            { time: '15:00', type: 'accommodation', title: 'Hotel Check-out', description: '', duration: '', cost: null, status: '', icon: Hotel },
+          ],
+        });
+      } else if (isFirstUsable) {
+        fallbackDays.push({
+          day,
+          date: '',
+          title: 'Arrival Day',
+          activities: [
+            ...(overnightCount === 0 ? [{
+              time: departureTime, type: 'transport', title: `${transportName}: ${sourceCity} → ${destCity}`,
+              description: `Duration: ${transportDuration}`, duration: transportDuration, cost: plan.breakdown?.transport ?? null, status: '', icon: TransportIcon,
+            }] : [{
+              time: arrivalTime, type: 'travel', title: `Arrive at ${destCity}`, description: '', duration: '', cost: null, status: '', icon: MapPin,
+            }]),
+            { time: '14:00', type: 'accommodation', title: 'Hotel Check-in', description: plan.hotel?.name || '', duration: '', cost: plan.hotel?.pricePerNight ?? null, status: 'Per Night', icon: Hotel },
+            { time: '17:00', type: 'leisure', title: 'Explore nearby area', description: '', duration: '', cost: null, status: '', icon: Coffee },
+            { time: '19:30', type: 'meal', title: 'Dinner', description: '', duration: '', cost: 500, status: '', icon: Utensils },
+          ],
+        });
+      } else if (isLastUsable) {
+        fallbackDays.push({
+          day,
+          date: '',
+          title: 'Departure Day',
+          activities: [
+            { time: '08:00', type: 'meal', title: 'Breakfast', description: '', duration: '', cost: 200, status: '', icon: Utensils },
+            { time: '09:00', type: 'accommodation', title: 'Hotel Check-out', description: '', duration: '', cost: null, status: '', icon: Hotel },
+            { time: '10:00', type: 'leisure', title: 'Last-minute sightseeing or shopping', description: '', duration: '', cost: null, status: '', icon: Camera },
+            { time: '18:00', type: 'transport', title: `${transportName}: ${destCity} → ${sourceCity}`, description: 'Return journey', duration: transportDuration, cost: null, status: '', icon: TransportIcon },
+          ],
+        });
+      } else {
+        fallbackDays.push({
+          day,
+          date: '',
+          title: `Day ${day} — Explore`,
+          activities: [
+            { time: '09:00', type: 'meal', title: 'Breakfast', description: '', duration: '', cost: 200, status: '', icon: Utensils },
+            { time: '10:00', type: 'attraction', title: 'Explore local attractions', description: 'Visit popular sites', duration: '3 hours', cost: null, status: '', icon: Camera },
+            { time: '13:00', type: 'meal', title: 'Lunch', description: '', duration: '', cost: 300, status: '', icon: Utensils },
+            { time: '15:00', type: 'leisure', title: 'Free time', description: 'Shopping or relaxation', duration: '2 hours', cost: null, status: '', icon: Coffee },
+            { time: '19:00', type: 'meal', title: 'Dinner', description: '', duration: '', cost: 500, status: '', icon: Utensils },
+          ],
+        });
+      }
     }
     return fallbackDays;
   };

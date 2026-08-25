@@ -103,7 +103,7 @@ export default function ResultsPage() {
         state: {
           tripPlan: selectedTripPlan,
           formData,
-          arrivalInfo,
+          arrivalInfo: selectedTripPlan.arrivalInfo || arrivalInfo,
           adjustedNights,
           isReturnTrip,
         },

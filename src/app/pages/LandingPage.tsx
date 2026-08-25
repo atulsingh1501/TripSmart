@@ -1,342 +1,700 @@
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
-import MapBackground from '../components/MapBackground';
-import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import {
-  Sparkles,
-  DollarSign,
-  Clock,
-  Shield,
-  Globe,
-  Calendar,
-  MapPin,
-  Star,
-  TrendingUp,
-  ArrowRight,
-  ChevronRight,
-  Compass,
-  Zap,
-} from 'lucide-react';
-import { Avatar, AvatarFallback } from '../components/ui/avatar';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useState, useEffect, useCallback } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 
-export default function LandingPage() {
-  const features = [
-    {
-      icon: Sparkles,
-      title: 'AI-Powered Planning',
-      description: 'Advanced AI analyzes millions of options to craft your perfect trip',
-    },
-    {
-      icon: DollarSign,
-      title: 'Budget Optimization',
-      description: 'Get the most value for your money with smart budget allocation',
-    },
-    {
-      icon: Clock,
-      title: 'Save Time',
-      description: 'Plan your entire trip in minutes, not hours or days',
-    },
-    {
-      icon: Shield,
-      title: 'Best Price Guarantee',
-      description: 'We compare thousands of options to find you the best deals',
-    },
-    {
-      icon: Globe,
-      title: 'Global Coverage',
-      description: 'Plan trips to destinations worldwide with local insights',
-    },
-    {
-      icon: Calendar,
-      title: 'Flexible Dates',
-      description: 'Find the best travel dates based on weather, prices, and events',
-    },
-    {
-      icon: MapPin,
-      title: 'Custom Itineraries',
-      description: 'Get personalized day-by-day plans matching your interests',
-    },
-    {
-      icon: Star,
-      title: 'Expert Recommendations',
-      description: 'Curated suggestions from travel experts and locals',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Real-Time Updates',
-      description: 'Stay informed with live price changes and availability',
-    },
-  ];
+// Open-source Unsplash travel images (all free to use)
+const heroSlides = [
+  {
+    url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80&auto=format&fit=crop',
+    location: 'Santorini, Greece',
+    caption: 'Where the sea meets the sky',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1920&q=80&auto=format&fit=crop',
+    location: 'Taj Mahal, India',
+    caption: 'A monument to wonder',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1920&q=80&auto=format&fit=crop',
+    location: 'Kyoto, Japan',
+    caption: 'Ancient paths, timeless beauty',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1920&q=80&auto=format&fit=crop',
+    location: 'Tuscany, Italy',
+    caption: 'The art of going slowly',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=1920&q=80&auto=format&fit=crop',
+    location: 'Marrakech, Morocco',
+    caption: 'A world of colour and scent',
+  },
+];
 
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Adventure Traveler',
-      content: 'TripSmart saved me $800 on my Europe trip and planned everything perfectly. The AI recommendations were spot-on!',
-      rating: 5,
-    },
-    {
-      name: 'Michael Chen',
-      role: 'Business Traveler',
-      content: 'As someone who travels frequently, this tool is a game-changer. It saves me hours of research every trip.',
-      rating: 5,
-    },
-    {
-      name: 'Emily Rodriguez',
-      role: 'Family Vacation Planner',
-      content: 'Planning a family trip of 5 was always stressful. TripSmart made it easy and stayed within our budget!',
-      rating: 5,
-    },
-  ];
+const processSteps = [
+  {
+    number: '01',
+    title: 'Tell us where you want to go',
+    description:
+      'Destination, budget, travel style. A few details and we have everything we need.',
+  },
+  {
+    number: '02',
+    title: 'We plan it in seconds',
+    description:
+      'Our AI works through thousands of routes, stays and timings to build the optimal itinerary.',
+  },
+  {
+    number: '03',
+    title: 'Refine, save, and go',
+    description:
+      'Adjust any detail until it feels right. Then save your plan and travel with confidence.',
+  },
+];
+
+function HeroCarousel() {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, duration: 40 });
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState<boolean[]>(new Array(heroSlides.length).fill(false));
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCurrentIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on('select', onSelect);
+    return () => { emblaApi.off('select', onSelect); };
+  }, [emblaApi, onSelect]);
+
+  // Auto-advance every 6 seconds
+  useEffect(() => {
+    if (!emblaApi) return;
+    const interval = setInterval(() => emblaApi.scrollNext(), 6000);
+    return () => clearInterval(interval);
+  }, [emblaApi]);
+
+  const handleImageLoad = (i: number) => {
+    setImagesLoaded(prev => {
+      const next = [...prev];
+      next[i] = true;
+      return next;
+    });
+  };
 
   return (
-    <div className="flex min-h-screen flex-col">
-
-      {/* ── HERO: Full-screen Map ── */}
-      <section className="relative w-full h-screen overflow-hidden">
-        {/* Map fills the entire hero */}
-        <MapBackground
-          origin="Delhi"
-          destination="Goa"
-          stops={['Mumbai']}
-        />
-
-        {/* Translucent navigation overlaid on map */}
-        <div className="absolute top-0 left-0 right-0 z-30">
-          <Navigation />
-        </div>
-
-        {/* Floating CTA card – left side */}
-        <div className="absolute top-0 left-0 h-full z-20 flex items-center pl-8 pt-14 pb-4 pointer-events-none">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="glass-panel rounded-2xl p-8 max-w-md pointer-events-auto"
+    <div className="relative w-full h-screen overflow-hidden" ref={emblaRef}>
+      <div className="flex h-full" style={{ touchAction: 'pan-y' }}>
+        {heroSlides.map((slide, i) => (
+          <div
+            key={i}
+            className="relative flex-none w-full h-full"
+            style={{ minWidth: '100%' }}
           >
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/40 bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 mb-6">
-              <Sparkles className="h-3.5 w-3.5" />
-              Next-Gen Travel Planning
-            </div>
+            {/* Skeleton while loading */}
+            {!imagesLoaded[i] && (
+              <div
+                className="absolute inset-0"
+                style={{ background: '#2A2620', animation: 'pulse 2s ease-in-out infinite' }}
+              />
+            )}
+            <img
+              src={slide.url}
+              alt={slide.location}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: imagesLoaded[i] ? 1 : 0, transition: 'opacity 0.5s ease' }}
+              onLoad={() => handleImageLoad(i)}
+              loading={i === 0 ? 'eager' : 'lazy'}
+            />
+            {/* Dark overlay — subtle, not full black gradient */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  'linear-gradient(to right, rgba(10, 8, 6, 0.62) 0%, rgba(10, 8, 6, 0.20) 60%, rgba(10, 8, 6, 0.10) 100%)',
+              }}
+            />
+          </div>
+        ))}
+      </div>
 
-            <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
-              Your Dream Trip,{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-300 bg-clip-text text-transparent">
-                Optimized by AI
+      {/* Hero text — overlaid */}
+      <div className="absolute inset-0 flex flex-col justify-center pointer-events-none" style={{ paddingLeft: 'clamp(2rem, 8vw, 8rem)' }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-xl"
+          >
+            {/* Location tag */}
+            <p
+              className="text-sm font-medium tracking-widest uppercase mb-4"
+              style={{ color: 'rgba(247, 244, 239, 0.65)', letterSpacing: '0.14em' }}
+            >
+              {heroSlides[currentIndex].location}
+            </p>
+
+            {/* Big editorial headline */}
+            <h1
+              className="font-serif text-white leading-none mb-3"
+              style={{
+                fontSize: 'clamp(2.75rem, 6vw, 5.5rem)',
+                fontWeight: 600,
+                fontFamily: 'var(--font-serif)',
+                lineHeight: 1.05,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Plan smarter.<br />
+              <span style={{ fontStyle: 'italic', fontWeight: 400 }}>
+                Travel better.
               </span>
             </h1>
 
-            <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed mb-8">
-              Enter your preferences and let our AI craft the perfect itinerary — flights, stays, and experiences — in seconds.
+            <p
+              className="mb-8 text-base font-normal"
+              style={{ color: 'rgba(247, 244, 239, 0.72)', maxWidth: 380, lineHeight: 1.6 }}
+            >
+              {heroSlides[currentIndex].caption}
             </p>
 
-            {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              {[
-                { val: '500K+', label: 'Travelers' },
-                { val: '3s', label: 'Plan Time' },
-                { val: '₹800', label: 'Avg. Saved' },
-              ].map(stat => (
-                <div key={stat.label} className="text-center p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-                  <p className="text-xl font-bold text-slate-900 dark:text-white">{stat.val}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" className="h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white border-0 shadow-lg shadow-blue-500/30 flex-1" asChild>
-                <Link to="/plan-trip">
-                  <Zap className="mr-2 h-4 w-4 fill-current" />
-                  Start Planning
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="h-12 px-6 border-slate-300 dark:border-white/20 text-slate-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/10" asChild>
-                <Link to="/about">
-                  Learn More <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+            {/* CTA */}
+            <div className="flex gap-3 pointer-events-auto flex-wrap">
+              <Link
+                to="/plan-trip"
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all duration-200"
+                style={{
+                  background: '#F7F4EF',
+                  color: '#1A1814',
+                  borderRadius: '0.25rem',
+                  letterSpacing: '-0.01em',
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FFFFFF'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F7F4EF'}
+              >
+                Start planning
+              </Link>
+              <Link
+                to="/about"
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all duration-200"
+                style={{
+                  color: 'rgba(247, 244, 239, 0.85)',
+                  border: '1px solid rgba(247, 244, 239, 0.25)',
+                  borderRadius: '0.25rem',
+                  letterSpacing: '-0.01em',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.color = '#F7F4EF';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(247, 244, 239, 0.50)';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(247, 244, 239, 0.08)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.color = 'rgba(247, 244, 239, 0.85)';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(247, 244, 239, 0.25)';
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
+              >
+                How it works
+              </Link>
             </div>
           </motion.div>
-        </div>
+        </AnimatePresence>
+      </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/50">
-          <span className="text-xs tracking-widest uppercase">Scroll to explore</span>
-          <div className="w-0.5 h-8 bg-gradient-to-b from-white/30 to-transparent animate-pulse" />
+      {/* Slide indicators */}
+      <div className="absolute bottom-8 left-1/2 flex gap-1.5" style={{ transform: 'translateX(-50%)' }}>
+        {heroSlides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => emblaApi?.scrollTo(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className="transition-all duration-300"
+            style={{
+              width: i === currentIndex ? 24 : 6,
+              height: 6,
+              borderRadius: 3,
+              background: i === currentIndex ? '#F7F4EF' : 'rgba(247, 244, 239, 0.35)',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Slide counter — top right */}
+      <div
+        className="absolute top-24 right-8 text-sm font-medium tabular-nums hidden md:block"
+        style={{ color: 'rgba(247, 244, 239, 0.45)', letterSpacing: '0.05em' }}
+      >
+        {String(currentIndex + 1).padStart(2, '0')} / {String(heroSlides.length).padStart(2, '0')}
+      </div>
+    </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <div style={{ background: '#F7F4EF', minHeight: '100vh' }}>
+      {/* Floating nav */}
+      <Navigation />
+
+      {/* Hero — full bleed carousel, no padding, no margin */}
+      <HeroCarousel />
+
+      {/* ── How it works ───────────────────────────────────── */}
+      <section style={{ padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 8vw, 8rem)' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+
+          {/* Section label */}
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-xs font-semibold tracking-widest uppercase mb-10"
+            style={{ color: '#C85F3C', letterSpacing: '0.16em' }}
+          >
+            Process
+          </motion.p>
+
+          {/* Steps — editorial numbered list */}
+          <div>
+            {processSteps.map((step, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.55, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                className="group"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '3rem 1fr',
+                  gap: '2rem',
+                  padding: '2rem 0',
+                  borderBottom: i < processSteps.length - 1
+                    ? '1px solid rgba(26, 24, 20, 0.10)'
+                    : 'none',
+                  alignItems: 'start',
+                }}
+              >
+                {/* Number */}
+                <p
+                  className="font-serif font-normal tabular-nums leading-none pt-1"
+                  style={{
+                    fontSize: '1.125rem',
+                    color: '#9A958F',
+                    fontFamily: 'var(--font-serif)',
+                  }}
+                >
+                  {step.number}
+                </p>
+
+                {/* Content */}
+                <div>
+                  <h3
+                    className="font-serif mb-2"
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: 'clamp(1.3rem, 2.5vw, 1.75rem)',
+                      fontWeight: 500,
+                      color: '#1A1814',
+                      lineHeight: 1.25,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p
+                    className="text-base font-normal leading-relaxed"
+                    style={{ color: '#6B6560', maxWidth: 480 }}
+                  >
+                    {step.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <main className="flex-1 bg-background">
+      {/* ── Editorial image break ───────────────────────────── */}
+      <section style={{ position: 'relative', height: 'clamp(320px, 45vw, 560px)', overflow: 'hidden' }}>
+        <img
+          src="https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1920&q=80&auto=format&fit=crop"
+          alt="Planning a journey"
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+        {/* Overlay with editorial quote */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ background: 'rgba(10, 8, 6, 0.42)' }}
+        >
+          <motion.blockquote
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="text-center px-6"
+            style={{ maxWidth: 640 }}
+          >
+            <p
+              className="font-serif text-white italic"
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: 'clamp(1.4rem, 3.5vw, 2.5rem)',
+                fontWeight: 400,
+                lineHeight: 1.3,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              "Not all those who wander are lost. But some of them could use a better plan."
+            </p>
+            <p
+              className="mt-4 text-sm font-medium tracking-widest uppercase"
+              style={{ color: 'rgba(247, 244, 239, 0.55)', letterSpacing: '0.12em' }}
+            >
+              TripSmart
+            </p>
+          </motion.blockquote>
+        </div>
+      </section>
 
-        {/* Features Section */}
-        <section className="bg-muted/30 py-24">
-          <div className="container mx-auto px-4">
-            <div className="mb-16 text-center">
-              <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Everything you need for the perfect trip</h2>
-              <p className="mx-auto max-w-2xl text-muted-foreground">
-                TripSmart combines cutting-edge AI with real-time data to provide a seamless planning experience.
+      {/* ── Destination editorial grid ─────────────────────── */}
+      <section style={{ padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 8vw, 8rem)' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="mb-12 flex items-end justify-between gap-4"
+          >
+            <div>
+              <p
+                className="text-xs font-semibold tracking-widest uppercase mb-3"
+                style={{ color: '#C85F3C', letterSpacing: '0.16em' }}
+              >
+                Destinations
               </p>
+              <h2
+                className="font-serif"
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 'clamp(1.75rem, 4vw, 3rem)',
+                  fontWeight: 500,
+                  color: '#1A1814',
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1.1,
+                }}
+              >
+                Popular journeys<br />
+                <span style={{ fontStyle: 'italic', fontWeight: 400 }}>
+                  planned on TripSmart
+                </span>
+              </h2>
             </div>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <Card className="h-full border-none bg-background shadow-sm transition-shadow hover:shadow-md">
-                    <CardContent className="p-8">
-                      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                        <feature.icon className="h-6 w-6 text-primary" />
-                      </div>
-                      <h3 className="mb-2 text-xl font-bold">{feature.title}</h3>
-                      <p className="text-muted-foreground">{feature.description}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
+            <Link
+              to="/plan-trip"
+              className="hidden md:inline-flex items-center gap-2 text-sm font-medium whitespace-nowrap"
+              style={{
+                color: '#1A1814',
+                borderBottom: '1px solid rgba(26, 24, 20, 0.30)',
+                paddingBottom: 2,
+                transition: 'color 0.2s, border-color 0.2s',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.color = '#C85F3C';
+                (e.currentTarget as HTMLElement).style.borderColor = '#C85F3C';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.color = '#1A1814';
+                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(26, 24, 20, 0.30)';
+              }}
+            >
+              Plan your own
+            </Link>
+          </motion.div>
 
-        {/* How It Works Section */}
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="mb-16 text-center">
-              <h2 className="mb-4 text-3xl font-bold sm:text-4xl">How it works</h2>
-              <p className="mx-auto max-w-2xl text-muted-foreground">
-                Three simple steps to your next unforgettable adventure.
-              </p>
-            </div>
-            <div className="relative grid gap-12 lg:grid-cols-3">
-              {/* Connector line for desktop */}
-              <div className="absolute left-0 top-1/2 hidden h-0.5 w-full -translate-y-1/2 bg-muted-foreground/20 lg:block" />
-
-              {[
-                {
-                  number: "01",
-                  title: "Enter Preferences",
-                  description: "Tell us where you want to go, your budget, and what you love to do."
-                },
-                {
-                  number: "02",
-                  title: "AI Generation",
-                  description: "Our AI crafts 3 unique trip plans optimized for cost, time, and experience."
-                },
-                {
-                  number: "03",
-                  title: "Customize & Book",
-                  description: "Tweak the details, select your preferred options, and book everything in one click."
-                }
-              ].map((step, index) => (
-                <div key={index} className="relative flex flex-col items-center text-center">
-                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-lg">
-                    {step.number}
-                  </div>
-                  <h3 className="mb-3 text-2xl font-bold">{step.title}</h3>
-                  <p className="text-muted-foreground">{step.description}</p>
+          {/* 2-column asymmetric layout */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: 'auto auto',
+              gap: '1rem',
+            }}
+          >
+            {[
+              {
+                img: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=900&q=80&auto=format&fit=crop',
+                location: 'Amalfi Coast',
+                country: 'Italy',
+                duration: '7 days from Delhi',
+                tall: true,
+              },
+              {
+                img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=900&q=80&auto=format&fit=crop',
+                location: 'Bali',
+                country: 'Indonesia',
+                duration: '10 days from Mumbai',
+                tall: false,
+              },
+              {
+                img: 'https://images.unsplash.com/photo-1491555103944-7c647fd857e6?w=900&q=80&auto=format&fit=crop',
+                location: 'Swiss Alps',
+                country: 'Switzerland',
+                duration: '8 days from Bangalore',
+                tall: false,
+              },
+            ].map((dest, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.55, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  gridRow: i === 0 ? 'span 2' : 'span 1',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: '0.25rem',
+                  aspectRatio: i === 0 ? undefined : '4/3',
+                  height: i === 0 ? '100%' : undefined,
+                  minHeight: i === 0 ? 400 : undefined,
+                  cursor: 'pointer',
+                }}
+                className="group"
+                onClick={() => window.location.href = '/plan-trip'}
+              >
+                <img
+                  src={dest.img}
+                  alt={dest.location}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700"
+                  style={{ transform: 'scale(1.02)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.06)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLImageElement).style.transform = 'scale(1.02)'}
+                  loading="lazy"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      'linear-gradient(to top, rgba(10, 8, 6, 0.70) 0%, rgba(10, 8, 6, 0.10) 60%)',
+                  }}
+                />
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p
+                    className="text-xs font-medium tracking-widest uppercase mb-1"
+                    style={{ color: 'rgba(247, 244, 239, 0.55)', letterSpacing: '0.12em' }}
+                  >
+                    {dest.country}
+                  </p>
+                  <p
+                    className="font-serif text-white font-medium"
+                    style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: i === 0 ? 'clamp(1.4rem, 3vw, 2rem)' : '1.2rem',
+                      lineHeight: 1.2,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {dest.location}
+                  </p>
+                  <p
+                    className="text-xs mt-1.5"
+                    style={{ color: 'rgba(247, 244, 239, 0.50)' }}
+                  >
+                    {dest.duration}
+                  </p>
                 </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ───────────────────────────────────────── */}
+      <section
+        style={{
+          background: '#1A1814',
+          padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 8vw, 8rem)',
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}
+        >
+          <p
+            className="text-xs font-semibold tracking-widest uppercase mb-6"
+            style={{ color: '#C85F3C', letterSpacing: '0.16em' }}
+          >
+            Get started
+          </p>
+          <h2
+            className="font-serif text-white mb-6"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+              fontWeight: 500,
+              lineHeight: 1.1,
+              letterSpacing: '-0.03em',
+            }}
+          >
+            Your next trip,<br />
+            <span style={{ fontStyle: 'italic', fontWeight: 400 }}>
+              planned intelligently.
+            </span>
+          </h2>
+          <p
+            className="text-base mb-10"
+            style={{ color: 'rgba(247, 244, 239, 0.55)', lineHeight: 1.7 }}
+          >
+            Describe your dream trip and we will build the itinerary. Adjust anything, save it, and travel.
+          </p>
+          <Link
+            to="/plan-trip"
+            className="inline-flex items-center px-8 py-4 text-sm font-semibold transition-all duration-200"
+            style={{
+              background: '#F7F4EF',
+              color: '#1A1814',
+              borderRadius: '0.25rem',
+              letterSpacing: '-0.01em',
+            }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FFFFFF'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#F7F4EF'}
+          >
+            Plan a trip
+          </Link>
+        </motion.div>
+      </section>
+
+      {/* ── Footer ──────────────────────────────────────────── */}
+      <footer
+        style={{
+          background: '#120F0C',
+          padding: '3rem clamp(1.5rem, 8vw, 8rem)',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 960,
+            margin: '0 auto',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto auto',
+            gap: '3rem',
+            alignItems: 'start',
+          }}
+        >
+          {/* Brand */}
+          <div>
+            <p
+              className="font-serif font-medium mb-2"
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '1.125rem',
+                color: '#F7F4EF',
+              }}
+            >
+              TripSmart
+            </p>
+            <p
+              className="text-sm"
+              style={{ color: 'rgba(247, 244, 239, 0.35)', maxWidth: 240, lineHeight: 1.6 }}
+            >
+              AI-powered travel planning for the thoughtful traveller.
+            </p>
+          </div>
+
+          {/* Product */}
+          <div>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: 'rgba(247, 244, 239, 0.35)', letterSpacing: '0.12em' }}
+            >
+              Product
+            </p>
+            <ul className="space-y-2">
+              {[
+                { label: 'Plan a trip', href: '/plan-trip' },
+                { label: 'My trips', href: '/my-trips' },
+                { label: 'About', href: '/about' },
+              ].map(link => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-sm transition-colors duration-150"
+                    style={{ color: 'rgba(247, 244, 239, 0.55)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#F7F4EF'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(247, 244, 239, 0.55)'}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
-        </section>
 
-        {/* Testimonials Section */}
-        <section className="bg-muted/30 py-24">
-          <div className="container mx-auto px-4">
-            <div className="mb-16 text-center">
-              <h2 className="mb-4 text-3xl font-bold sm:text-4xl">Loved by travelers worldwide</h2>
-              <div className="flex justify-center gap-1">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className="h-5 w-5 fill-primary text-primary" />
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              {testimonials.map((t, i) => (
-                <Card key={i} className="border-none bg-background shadow-sm">
-                  <CardContent className="p-8">
-                    <p className="mb-6 italic text-muted-foreground">"{t.content}"</p>
-                    <div className="flex items-center gap-4">
-                      <Avatar>
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {t.name?.split(' ').map(n => n?.[0] || '').join('') || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-bold">{t.name}</h4>
-                        <p className="text-sm text-muted-foreground">{t.role}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+          {/* Legal */}
+          <div>
+            <p
+              className="text-xs font-semibold tracking-widest uppercase mb-4"
+              style={{ color: 'rgba(247, 244, 239, 0.35)', letterSpacing: '0.12em' }}
+            >
+              Legal
+            </p>
+            <ul className="space-y-2">
+              {[
+                { label: 'Terms of service', href: '/terms' },
+                { label: 'Privacy policy', href: '/privacy' },
+              ].map(link => (
+                <li key={link.href}>
+                  <Link
+                    to={link.href}
+                    className="text-sm transition-colors duration-150"
+                    style={{ color: 'rgba(247, 244, 239, 0.55)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#F7F4EF'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(247, 244, 239, 0.55)'}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
-        </section>
+        </div>
 
-        {/* CTA Section */}
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="rounded-3xl bg-primary px-8 py-16 text-center text-primary-foreground shadow-2xl lg:py-24">
-              <h2 className="mb-6 text-4xl font-extrabold sm:text-5xl">Ready to plan your next adventure?</h2>
-              <p className="mx-auto mb-10 max-w-2xl text-xl opacity-90">
-                Join over 500,000 travelers who use TripSmart to plan smarter, faster, and better trips.
-              </p>
-              <Button size="lg" variant="secondary" className="h-14 px-10 text-lg font-bold" asChild>
-                <Link to="/plan-trip">
-                  Get Started for Free <ChevronRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div className="col-span-2">
-              <div className="mb-4 flex items-center gap-2">
-                <Compass className="h-6 w-6 text-primary" />
-                <span className="text-xl font-bold tracking-tight">TripSmart</span>
-              </div>
-              <p className="mb-6 max-w-xs text-muted-foreground">
-                The ultimate AI-powered travel planning companion for the modern explorer.
-              </p>
-              <div className="flex gap-4">
-                {/* Social icons could go here */}
-              </div>
-            </div>
-            <div>
-              <h4 className="mb-4 font-bold">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/">Features</Link></li>
-                <li><Link to="/plan-trip">Pricing</Link></li>
-                <li><Link to="/mobile">Mobile App</Link></li>
-                <li><Link to="/api">API</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 font-bold">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link to="/about">About Us</Link></li>
-                <li><Link to="/careers">Careers</Link></li>
-                <li><Link to="/blog">Blog</Link></li>
-                <li><Link to="/contact">Contact</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-12 border-t pt-8 text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} TripSmart AI Inc. All rights reserved.</p>
-          </div>
+        <div
+          style={{
+            maxWidth: 960,
+            margin: '2.5rem auto 0',
+            paddingTop: '2rem',
+            borderTop: '1px solid rgba(247, 244, 239, 0.08)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '1rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <p className="text-xs" style={{ color: 'rgba(247, 244, 239, 0.28)' }}>
+            &copy; {new Date().getFullYear()} TripSmart. All rights reserved.
+          </p>
+          <p className="text-xs" style={{ color: 'rgba(247, 244, 239, 0.18)' }}>
+            Made for travellers, by travellers.
+          </p>
         </div>
       </footer>
     </div>

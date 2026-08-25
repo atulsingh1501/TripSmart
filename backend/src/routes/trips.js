@@ -445,6 +445,10 @@ const generateTripPlan = async (preferences) => {
 
     // Use the nights calculated by the algorithm (which accounts for overnight travel)
     const actualNightsUsed = algoPlan.breakdown.nightsUsed ?? planArrivalInfo.adjustedNights;
+    // overnightCount = how many nights are spent travelling (affects hotel & day count)
+    const overnightCount = planArrivalInfo.nightsInTransit || 0;
+    // usableDays = calendar days the user is actually at destination (for food/activity calc)
+    const usableDays = Math.max(1, durationDays - overnightCount);
 
     // Generate per-plan itinerary based on this plan's specific transport
     const durationStr = typeof planDuration === 'object' && planDuration.hours !== undefined
@@ -454,6 +458,8 @@ const generateTripPlan = async (preferences) => {
       outboundDeparture: planDepartureTime,
       outboundArrival: planArrivalInfo.arrivalTime,
       isOvernightTravel: planArrivalInfo.isNextDayArrival,
+      overnightCount,
+      usableDays,
       returnDeparture: null,
       returnDate: endDate,
       transportName: transport.name || 'Transport',
@@ -477,7 +483,12 @@ const generateTripPlan = async (preferences) => {
       score: algoPlan.score,
       isOverBudget: algoPlan.isOverBudget || false,      // flag so frontend can label it
       overBudgetBy: algoPlan.overBudgetBy || 0,
-      breakdown: algoPlan.breakdown,
+      breakdown: {                         // Spread original breakdown + augment
+        ...algoPlan.breakdown,
+        overnightCount,                    // nights in transit for this specific transport
+        usableDays,                        // days actually at destination
+        nightsAtDestination: actualNightsUsed, // hotel nights at destination
+      },
       // NEW: Per-plan adjusted nights based on this plan's transport timing
       nights: actualNightsUsed,
       requestedNights: nights,  // Original requested nights for reference
@@ -493,8 +504,15 @@ const generateTripPlan = async (preferences) => {
         class: transport.class,
         name: transport.name,
         cost: transport.totalCost,
+        overnightCount,
+        operator: transport.name || transport.details?.airline || transport.details?.trainName,
+        number: transport.details?.trainNumber || transport.details?.flightNumber,
+        departure: transport.details?.departure,
+        arrival: transport.details?.arrival,
+        duration: transport.details?.duration || transport.duration,
         details: {
           ...(transport.details || {}),
+          overnightCount,
           // Add transport name to details for frontend compatibility
           trainName: transport.mode === 'train' ? transport.name : undefined,
           airline: transport.mode === 'flight' ? (transport.details?.airline || transport.name) : undefined,
@@ -565,6 +583,20 @@ const generateTripPlan = async (preferences) => {
         transport: algoPlan.transport,
         localTransport: null,
         hotel: algoPlan.accommodation,
+        meals: algoPlan.meals,
+        activities: algoPlan.activities,
+        itinerary: algoPlan.itinerary,
+        breakdown: {
+          ...algoPlan.breakdown,
+          transportTotal: algoPlan.breakdown?.transportTotal || 0,
+          accommodationTotal: algoPlan.breakdown?.accommodationTotal || 0,
+          activityTotal: algoPlan.breakdown?.activityTotal || 0,
+          foodTotal: algoPlan.breakdown?.foodTotal || 0,
+          nightsUsed: algoPlan.breakdown?.nightsUsed ?? algoPlan.nights,
+          overnightCount: algoPlan.breakdown?.overnightCount ?? 0,
+          usableDays: algoPlan.breakdown?.usableDays,
+          nightsAtDestination: algoPlan.breakdown?.nightsAtDestination ?? algoPlan.nights,
+        },
         costs: {
           transport: algoPlan.breakdown.transportTotal || 0,
           localTransport: 0,
@@ -1040,10 +1072,15 @@ const generateTripPlan = async (preferences) => {
   console.log(`   Overnight travel: ${arrivalInfo.isNextDayArrival}`);
   console.log(`   Hotel check-in date: ${arrivalInfo.hotelCheckInDate}`);
 
+  const globalOvernightCount = arrivalInfo.nightsInTransit || 0;
+  const globalUsableDays = Math.max(1, durationDays - globalOvernightCount);
+
   const transportTimingDetails = {
     outboundDeparture: arrivalInfo.departureTime,
     outboundArrival: arrivalInfo.arrivalTime,
     isOvernightTravel: arrivalInfo.isNextDayArrival,
+    overnightCount: globalOvernightCount,
+    usableDays: globalUsableDays,
     returnDeparture: null,
     returnDate: endDate,
     // Transport display info
@@ -1130,238 +1167,206 @@ const generateTripPlan = async (preferences) => {
 };
 
 /**
- * Generate day-by-day itinerary with proper travel time accounting
- * 
- * TRAVEL TIME LOGIC:
- * - If departure is after 18:00 (evening train/flight), consider it overnight travel
- * - Overnight travel: Day 1 = Departure (in transit), Day 2 = Arrival at destination
- * - Regular travel: Day 1 = Arrival at destination
- * 
- * Example (Overnight):
- *   - Train departs 21:30 on Dec 27 (Day 1)
- *   - Train arrives 09:45 on Dec 28 (Day 2)
- *   - User reaches hotel by ~10:30 (Day 2)
- *   - Day 2 activities: Check-in, lunch, evening activities
- *   - Return transport on Day N (user's return date)
- * 
- * @param {Object} city - Destination city data
- * @param {number} nights - Number of hotel nights
- * @param {string} tripType - 'tour' or 'direct'
- * @param {Object} transportDetails - Outbound and return transport info
- * @param {Object} hotelDetails - Hotel name and price per night
- * @param {boolean} isReturnTrip - Whether this is a round trip (affects last day)
+ * Generate day-by-day itinerary with proper travel time accounting.
+ *
+ * Day model: totalDays = overnightCount + usableDays
+ *   - Days 1..overnightCount: one "In Transit" tab per overnight leg
+ *   - Days (overnightCount+1)..(overnightCount+usableDays): destination days
+ *     • First usable day: arrive + check-in
+ *     • Middle usable days: explore
+ *     • Last usable day: check-out (+ return transport if round trip)
+ *
+ * Example: 2-night train + 3 usable days = 5 tabs
+ *   Day 1: In Transit, Day 2: In Transit,
+ *   Day 3: Arrive + Check-in, Day 4: Explore, Day 5: Check-out
  */
 const generateItinerary = (city, nights, tripType, transportDetails = {}, hotelDetails = {}, isReturnTrip = true) => {
   const itinerary = [];
   const attractions = city.attractions || [];
   const { hotelName = 'Hotel', pricePerNight = 0 } = hotelDetails;
 
-  // Extract transport timing info
   const {
-    outboundDeparture = '09:00',  // Departure time from source
-    outboundArrival = '12:00',    // Arrival time at destination
-    isOvernightTravel = false,    // Does the journey span midnight?
-    returnDeparture = null,       // Return transport departure time
-    returnDate = null,            // User's return date
-    transportName = 'Transport',  // Transport name (train/flight name)
-    transportPrice = 0,           // Transport price
-    transportDuration = '2h',     // Transport duration
-    sourceCity = '',              // Source city name
-    destCity = ''                 // Destination city name
+    outboundDeparture = '09:00',
+    outboundArrival = '12:00',
+    returnDeparture = null,
+    transportName = 'Transport',
+    transportPrice = 0,
+    transportDuration = '2h',
+    sourceCity = '',
+    destCity = '',
+    overnightCount: rawOvernightCount = 0,
+    usableDays: rawUsableDays,
   } = transportDetails;
 
-  // Parse departure hour to determine if it's evening/overnight travel
-  const departureHour = parseInt(outboundDeparture.split(':')[0], 10) || 9;
-  const isEveningDeparture = departureHour >= 18; // After 6 PM is considered evening
-  const calculatedOvernightTravel = isOvernightTravel || isEveningDeparture;
+  const overnightCount = Math.max(0, Number(rawOvernightCount) || 0);
+  const usableDays = rawUsableDays != null
+    ? Math.max(1, Number(rawUsableDays))
+    : Math.max(1, (Number(nights) || 0) + 1);
+  const totalDays = overnightCount + usableDays;
 
   console.log('\n📅 Itinerary Generation:');
-  console.log(`   Departure hour: ${departureHour}, Is afternoon/evening: ${isEveningDeparture}`);
-  console.log(`   Overnight travel: ${calculatedOvernightTravel}`);
-  console.log(`   Nights requested: ${nights}`);
+  console.log(`   overnightCount: ${overnightCount}, usableDays: ${usableDays}, totalDays: ${totalDays}`);
 
-  // Calculate total trip days
-  // IMPORTANT: Total days = nights + 1 (arrival day + nights + departure day consolidated)
-  // For overnight travel, the structure changes but total days stay the same:
-  // - Day 1: Departure (evening, in transit)
-  // - Day 2 to Day N-1: Actual hotel nights (N-2 nights total)  
-  // - Day N: Departure from destination
-  // 
-  // For regular travel:
-  // - Day 1: Arrival (morning/afternoon)
-  // - Day 2 to Day N-1: Full exploration days
-  // - Day N: Departure
-  const totalDays = nights + 1;
-
-  console.log(`   Total days in itinerary: ${totalDays}`);
-
-  for (let day = 1; day <= totalDays; day++) {
-    const dayPlan = {
-      day,
-      title: '',
-      activities: []
+  const buildArrivalDayActivities = () => {
+    const arrivalHour = parseInt(String(outboundArrival).split(':')[0], 10) || 12;
+    const checkInHour = Math.max(14, arrivalHour + 1);
+    const checkInTime = `${checkInHour}:00`;
+    const transportLeg = {
+      time: outboundDeparture,
+      activity: `${transportName}: ${sourceCity} → ${destCity}`,
+      type: 'transport',
+      description: `Duration: ${transportDuration}`,
+      cost: transportPrice
     };
 
-    // Day 1: Departure Day
-    if (day === 1) {
-      if (calculatedOvernightTravel) {
-        // Overnight travel - Day 1 is departure, user is traveling
-        dayPlan.title = 'Departure Day (In Transit)';
-        dayPlan.activities = [
-          {
-            time: outboundDeparture,
-            activity: `${transportName}: ${sourceCity} → ${destCity}`,
-            type: 'transport',
-            description: `Duration: ${transportDuration} • Overnight journey`,
-            cost: transportPrice
-          },
-          {
-            time: 'Night',
-            activity: 'In transit (no hotel stay)',
-            type: 'travel',
-            description: 'Traveling overnight'
-          }
-        ];
-      } else {
-        // Same-day arrival - Day 1 includes arrival and hotel check-in
-        // Standard hotel check-in is at 14:00 minimum
-        dayPlan.title = 'Arrival Day';
-        const arrivalHour = parseInt(outboundArrival.split(':')[0], 10) || 12;
-
-        // Check-in is at 14:00 or later (never before 14:00)
-        const checkInHour = Math.max(14, arrivalHour + 1);
-        const checkInTime = `${checkInHour}:00`;
-
-        if (arrivalHour < 12) {
-          // Morning arrival - free time until 14:00 check-in
-          dayPlan.activities = [
-            { time: outboundDeparture, activity: `${transportName}: ${sourceCity} → ${destCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice },
-            { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
-            { time: `${arrivalHour + 1}:00`, activity: 'Store luggage at hotel / Free time until check-in', type: 'leisure', description: 'Explore nearby or relax at lobby' },
-            { time: checkInTime, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
-            { time: '15:00', activity: 'Freshen up and rest', type: 'leisure' },
-            { time: '17:00', activity: 'Explore local area and evening walk', type: 'leisure' },
-            { time: '19:30', activity: 'Dinner', type: 'meal', cost: 500 }
-          ];
-        } else if (arrivalHour < 18) {
-          // Afternoon arrival - check-in at 14:00 or arrival+1
-          dayPlan.activities = [
-            { time: outboundDeparture, activity: `${transportName}: ${sourceCity} → ${destCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice },
-            { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
-            { time: checkInTime, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
-            { time: 'Evening', activity: 'Explore local area and evening walk', type: 'leisure' },
-            { time: '19:30', activity: 'Dinner', type: 'meal', cost: 500 }
-          ];
-        } else {
-          // Evening arrival - check-in upon arrival
-          dayPlan.activities = [
-            { time: outboundDeparture, activity: `${transportName}: ${sourceCity} → ${destCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice },
-            { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
-            { time: `${Math.min(arrivalHour + 1, 22)}:00`, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
-            { time: 'Night', activity: 'Dinner and rest', type: 'meal', cost: 400 }
-          ];
-        }
-      }
-    }
-    // Day 2 (for overnight travel): Actual arrival at destination
-    else if (day === 2 && calculatedOvernightTravel) {
-      dayPlan.title = 'Arrival Day';
-      const arrivalHour = parseInt(outboundArrival.split(':')[0], 10) || 10;
-
-      // Check-in is at 14:00 or later (never before 14:00)
-      const checkInHour = Math.max(14, arrivalHour + 1);
-      const checkInTime = `${checkInHour}:00`;
-
+    if (overnightCount === 0) {
       if (arrivalHour < 12) {
-        // Morning arrival after overnight travel - free time until 14:00
-        dayPlan.activities = [
+        return [
+          transportLeg,
           { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
-          { time: `${arrivalHour + 1}:00`, activity: 'Store luggage at hotel / Free time', type: 'leisure', description: 'Explore nearby or relax at lobby' },
+          { time: `${arrivalHour + 1}:00`, activity: 'Store luggage at hotel / Free time until check-in', type: 'leisure', description: 'Explore nearby or relax at lobby' },
           { time: checkInTime, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
           { time: '15:00', activity: 'Freshen up and rest', type: 'leisure' },
-          { time: '17:00', activity: 'Explore nearby area', type: 'leisure' },
+          { time: '17:00', activity: 'Explore local area and evening walk', type: 'leisure' },
           { time: '19:30', activity: 'Dinner', type: 'meal', cost: 500 }
         ];
-      } else {
-        // Afternoon/evening arrival - check-in on arrival
-        dayPlan.activities = [
+      }
+      if (arrivalHour < 18) {
+        return [
+          transportLeg,
           { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
           { time: checkInTime, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
-          { time: '15:00', activity: 'Explore nearby area', type: 'leisure' },
+          { time: 'Evening', activity: 'Explore local area and evening walk', type: 'leisure' },
           { time: '19:30', activity: 'Dinner', type: 'meal', cost: 500 }
         ];
       }
+      return [
+        transportLeg,
+        { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
+        { time: `${Math.min(arrivalHour + 1, 22)}:00`, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
+        { time: 'Night', activity: 'Dinner and rest', type: 'meal', cost: 400 }
+      ];
     }
-    // Last Day: Departure/Return (different for one-way vs round trip)
-    else if (day === totalDays) {
-      if (!isReturnTrip) {
-        // ONE-WAY TRIP: Last day – check-out + last morning at destination
-        dayPlan.title = `Last Day in ${city.name} - Check-out`;
-        // Show remaining attractions on the last day
-        const lastAttrIdx = calculatedOvernightTravel ? totalDays - 3 : totalDays - 2;
-        const lastAttractions = attractions.slice(lastAttrIdx * 2, lastAttrIdx * 2 + 2);
-        dayPlan.activities = [
-          { time: '07:30', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
-          {
-            time: '09:00 - 11:30',
-            activity: lastAttractions[0]?.name || `Last morning sightseeing in ${city.name}`,
-            type: 'attraction',
-            details: lastAttractions[0]
-          },
-          { time: '12:00', activity: 'Lunch – try a local specialty', type: 'meal', cost: 300 },
-          {
-            time: '13:30',
-            activity: lastAttractions[1]?.name || 'Shopping for souvenirs and local crafts',
-            type: 'leisure'
-          },
-          { time: '15:00', activity: `Hotel check-out from ${hotelName}`, type: 'travel' },
-          { time: '16:00', activity: 'Trip ends – onward journey at your own arrangement', type: 'leisure', description: 'One-way trip complete' }
-        ];
-      } else {
-        // ROUND TRIP: Include return transport
-        dayPlan.title = 'Departure Day';
-        const departTime = returnDeparture || '18:00';
-        const departHour = parseInt(departTime.split(':')[0], 10) || 18;
 
-        if (departHour >= 18) {
-          // Evening departure - full day available
-          dayPlan.activities = [
-            { time: '08:00', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
-            { time: '09:00', activity: 'Hotel check-out', type: 'travel' },
-            { time: '10:00', activity: 'Last-minute sightseeing or shopping', type: 'leisure' },
-            { time: '13:00', activity: 'Lunch', type: 'meal', cost: 300 },
-            { time: '15:00', activity: 'Head to station/airport', type: 'travel' },
-            { time: departTime, activity: `${transportName}: ${destCity} → ${sourceCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice }
-          ];
-        } else if (departHour >= 12) {
-          // Afternoon departure
-          dayPlan.activities = [
-            { time: '08:00', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
-            { time: '09:00', activity: 'Hotel check-out', type: 'travel' },
-            { time: '10:00', activity: 'Last-minute shopping', type: 'leisure' },
-            { time: `${departHour - 2}:00`, activity: 'Head to station/airport', type: 'travel' },
-            { time: departTime, activity: `${transportName}: ${destCity} → ${sourceCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice }
-          ];
-        } else {
-          // Morning departure
-          dayPlan.activities = [
-            { time: '06:00', activity: 'Early breakfast', type: 'meal', cost: 200 },
-            { time: '07:00', activity: 'Hotel check-out', type: 'travel' },
-            { time: `${departHour - 1}:00`, activity: 'Head to station/airport', type: 'travel' },
-            { time: departTime, activity: `${transportName}: ${destCity} → ${sourceCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice }
-          ];
+    // Post-transit arrival (after one or more in-transit days)
+    if (arrivalHour < 12) {
+      return [
+        { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
+        { time: `${arrivalHour + 1}:00`, activity: 'Store luggage at hotel / Free time', type: 'leisure', description: 'Explore nearby or relax at lobby' },
+        { time: checkInTime, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
+        { time: '15:00', activity: 'Freshen up and rest', type: 'leisure' },
+        { time: '17:00', activity: 'Explore nearby area', type: 'leisure' },
+        { time: '19:30', activity: 'Dinner', type: 'meal', cost: 500 }
+      ];
+    }
+    return [
+      { time: outboundArrival, activity: `Arrive at ${city.name}`, type: 'travel' },
+      { time: checkInTime, activity: `Check-in: ${hotelName}`, type: 'accommodation', cost: pricePerNight, costLabel: 'Per Night' },
+      { time: '15:00', activity: 'Explore nearby area', type: 'leisure' },
+      { time: '19:30', activity: 'Dinner', type: 'meal', cost: 500 }
+    ];
+  };
+
+  const buildDepartureDayActivities = (explorationOffset = 0) => {
+    const lastAttractions = attractions.slice(explorationOffset * 2, explorationOffset * 2 + 2);
+    if (!isReturnTrip) {
+      return [
+        { time: '07:30', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
+        {
+          time: '09:00 - 11:30',
+          activity: lastAttractions[0]?.name || `Last morning sightseeing in ${city.name}`,
+          type: 'attraction',
+          details: lastAttractions[0]
+        },
+        { time: '12:00', activity: 'Lunch – try a local specialty', type: 'meal', cost: 300 },
+        {
+          time: '13:30',
+          activity: lastAttractions[1]?.name || 'Shopping for souvenirs and local crafts',
+          type: 'leisure'
+        },
+        { time: '15:00', activity: `Hotel check-out from ${hotelName}`, type: 'accommodation' },
+        { time: '16:00', activity: 'Trip ends – onward journey at your own arrangement', type: 'leisure', description: 'One-way trip complete' }
+      ];
+    }
+
+    const departTime = returnDeparture || '18:00';
+    const departHour = parseInt(String(departTime).split(':')[0], 10) || 18;
+    if (departHour >= 18) {
+      return [
+        { time: '08:00', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
+        { time: '09:00', activity: 'Hotel check-out', type: 'accommodation' },
+        { time: '10:00', activity: 'Last-minute sightseeing or shopping', type: 'leisure' },
+        { time: '13:00', activity: 'Lunch', type: 'meal', cost: 300 },
+        { time: '15:00', activity: 'Head to station/airport', type: 'travel' },
+        { time: departTime, activity: `${transportName}: ${destCity} → ${sourceCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice }
+      ];
+    }
+    if (departHour >= 12) {
+      return [
+        { time: '08:00', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
+        { time: '09:00', activity: 'Hotel check-out', type: 'accommodation' },
+        { time: '10:00', activity: 'Last-minute shopping', type: 'leisure' },
+        { time: `${departHour - 2}:00`, activity: 'Head to station/airport', type: 'travel' },
+        { time: departTime, activity: `${transportName}: ${destCity} → ${sourceCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice }
+      ];
+    }
+    return [
+      { time: '06:00', activity: 'Early breakfast', type: 'meal', cost: 200 },
+      { time: '07:00', activity: 'Hotel check-out', type: 'accommodation' },
+      { time: `${departHour - 1}:00`, activity: 'Head to station/airport', type: 'travel' },
+      { time: departTime, activity: `${transportName}: ${destCity} → ${sourceCity}`, type: 'transport', description: `Duration: ${transportDuration}`, cost: transportPrice }
+    ];
+  };
+
+  for (let day = 1; day <= totalDays; day++) {
+    const dayPlan = { day, title: '', activities: [] };
+
+    // ── In-transit days: one tab per overnight leg ──
+    if (day <= overnightCount) {
+      dayPlan.title = `Day ${day} — In Transit`;
+      dayPlan.activities = [
+        {
+          time: day === 1 ? outboundDeparture : 'All day',
+          activity: `${transportName}: ${sourceCity} → ${destCity}`,
+          type: 'transport',
+          description: day === 1
+            ? `Duration: ${transportDuration} • Overnight journey (leg ${day} of ${overnightCount})`
+            : `Continuing overnight journey (leg ${day} of ${overnightCount})`,
+          cost: day === 1 ? transportPrice : undefined
+        },
+        {
+          time: 'Night',
+          activity: 'In transit (no hotel stay)',
+          type: 'travel',
+          description: `Sleeping on ${transportName}`
         }
-      }
+      ];
+      itinerary.push(dayPlan);
+      continue;
     }
-    // Middle Days: Exploration
-    else {
-      // Calculate which exploration day this is (excluding arrival day)
-      // For overnight: Day 3 is first exploration (index 0), Day 4 is second (index 1)
-      // For regular: Day 2 is first exploration (index 0), Day 3 is second (index 1)
-      const explorationDayIndex = calculatedOvernightTravel ? day - 3 : day - 2;
-      const dayAttractions = attractions.slice(explorationDayIndex * 2, explorationDayIndex * 2 + 2);
 
-      dayPlan.title = `Day ${day} - Explore ${city.name}`;
+    const usableDayIndex = day - overnightCount; // 1 .. usableDays
+    const isFirstUsable = usableDayIndex === 1;
+    const isLastUsable = usableDayIndex === usableDays;
+
+    if (isFirstUsable && isLastUsable) {
+      // Single usable day: arrive, check-in, explore briefly, check-out
+      dayPlan.title = usableDays === 1 && overnightCount > 0 ? 'Arrival & Departure Day' : 'Arrival Day';
+      dayPlan.activities = [
+        ...buildArrivalDayActivities(),
+        { time: '15:00', activity: `Check-out: ${hotelName}`, type: 'accommodation' }
+      ];
+    } else if (isFirstUsable) {
+      dayPlan.title = overnightCount > 0 ? 'Arrival Day' : 'Arrival Day';
+      dayPlan.activities = buildArrivalDayActivities();
+    } else if (isLastUsable) {
+      dayPlan.title = isReturnTrip ? 'Departure Day' : `Last Day in ${city.name} — Check-out`;
+      const explorationOffset = Math.max(0, usableDays - 2);
+      dayPlan.activities = buildDepartureDayActivities(explorationOffset);
+    } else {
+      const explorationDayIndex = usableDayIndex - 2;
+      const dayAttractions = attractions.slice(explorationDayIndex * 2, explorationDayIndex * 2 + 2);
+      dayPlan.title = `Day ${day} — Explore ${city.name}`;
       dayPlan.activities = [
         { time: '08:00', activity: 'Breakfast at hotel', type: 'meal', cost: 200 },
         {
