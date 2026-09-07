@@ -48,268 +48,272 @@ export default function Navigation() {
     navigate('/');
   };
 
-  const serifStyle = { fontFamily: 'var(--font-serif)' } as const;
-
   return (
     <>
-      {/* Full-width wrapper so the pill stays viewport-centered
-          (Framer Motion y-animation would otherwise overwrite translateX) */}
-      <div
-        className="fixed inset-x-0 z-50 flex justify-center pointer-events-none"
-        style={{ top: 20, paddingLeft: 16, paddingRight: 16 }}
-      >
-      <motion.nav
-        initial={{ y: -20, opacity: 0 }}
+      <motion.header
+        initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-auto"
-        style={{ maxWidth: '100%' }}
-        aria-label="Main navigation"
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed inset-x-0 top-0 z-50 flex items-center px-6 md:px-10"
+        style={{
+          height: 60,
+          // No background — just floating text/icons
+          pointerEvents: 'none',
+        }}
       >
-        <div
-          className="flex items-center gap-1 px-3 py-2 transition-all duration-300"
-          style={{
-            background: scrolled
-              ? 'rgba(247, 244, 239, 0.96)'
-              : 'rgba(247, 244, 239, 0.88)',
-            backdropFilter: 'blur(20px) saturate(150%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(150%)',
-            border: '1px solid rgba(26, 24, 20, 0.10)',
-            borderRadius: '9999px',
-            boxShadow: scrolled
-              ? '0 4px 24px rgba(26, 24, 20, 0.08), 0 1px 4px rgba(26, 24, 20, 0.06)'
-              : '0 2px 12px rgba(26, 24, 20, 0.06)',
-          }}
+        {/* ── Brand (far left) ─────────────────────────── */}
+        <Link
+          to="/"
+          className="pointer-events-auto flex-shrink-0"
+          style={{ textDecoration: 'none' }}
         >
-          {/* Logo mark */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 pl-1 pr-3 mr-1"
-            style={{ borderRight: '1px solid rgba(26, 24, 20, 0.10)' }}
+          <span
+            style={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#1A1814',
+              lineHeight: 1,
+            }}
           >
-            <div
-              className="flex items-center justify-center"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: '#1A1814',
-                flexShrink: 0,
-              }}
-            >
-              {/* Minimal compass SVG */}
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="5.5" stroke="#F7F4EF" strokeWidth="1"/>
-                <path d="M7 3.5 L8.2 6.8 L7 6.2 L5.8 6.8 Z" fill="#C85F3C"/>
-                <path d="M7 10.5 L5.8 7.2 L7 7.8 L8.2 7.2 Z" fill="#F7F4EF" opacity="0.6"/>
-              </svg>
-            </div>
-            <span
-              className="text-sm font-medium tracking-tight hidden sm:block font-serif"
-              style={{ color: '#1A1814', letterSpacing: '-0.02em', ...serifStyle }}
-            >
-              TripSmart
-            </span>
-          </Link>
+            TRIPSMART
+          </span>
+        </Link>
 
-          {/* Nav links — desktop */}
-          <div className="hidden md:flex items-center gap-0.5">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className="relative px-3.5 py-1.5 text-sm font-medium font-serif transition-colors duration-200"
-                  style={{
-                    color: isActive ? '#1A1814' : '#6B6560',
-                    borderRadius: '9999px',
-                    background: isActive ? 'rgba(26, 24, 20, 0.06)' : 'transparent',
-                    letterSpacing: '-0.02em',
-                    ...serifStyle,
-                  }}
-                  onMouseEnter={e => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.color = '#1A1814';
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive) (e.currentTarget as HTMLElement).style.color = '#6B6560';
-                  }}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Auth area */}
-          <div className="flex items-center gap-1 pl-1 ml-1" style={{ borderLeft: '1px solid rgba(26, 24, 20, 0.10)' }}>
-            {isAuthenticated ? (
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium font-serif transition-colors duration-200"
-                  style={{
-                    color: '#1A1814',
-                    borderRadius: '9999px',
-                    background: dropdownOpen ? 'rgba(26, 24, 20, 0.06)' : 'transparent',
-                    letterSpacing: '-0.02em',
-                    ...serifStyle,
-                  }}
-                  onClick={() => setDropdownOpen(prev => !prev)}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.06)'}
-                  onMouseLeave={e => {
-                    if (!dropdownOpen) (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  }}
-                >
-                  <div
-                    className="flex items-center justify-center text-xs font-bold"
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      background: '#C85F3C',
-                      color: '#FFFFFF',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U'}
-                  </div>
-                  <span className="hidden sm:block">{user?.name?.split(' ')[0]}</span>
-                  {/* Chevron indicator */}
-                  <svg
-                    width="10" height="6" viewBox="0 0 10 6" fill="none"
-                    style={{ transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                  >
-                    <path d="M1 1L5 5L9 1" stroke="#1A1814" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-
-                {/* Click-controlled dropdown */}
-                <AnimatePresence>
-                  {dropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                      transition={{ duration: 0.15, ease: 'easeOut' }}
-                      className="absolute right-0 top-full mt-2 w-48 py-1 z-50"
-                      style={{
-                        background: '#F7F4EF',
-                        border: '1px solid rgba(26, 24, 20, 0.10)',
-                        borderRadius: '0.75rem',
-                        boxShadow: '0 8px 24px rgba(26, 24, 20, 0.10)',
-                      }}
-                    >
-                      <Link
-                        to="/profile"
-                        className="block px-4 py-2.5 text-sm transition-colors duration-150 font-serif"
-                        style={{ color: '#1A1814', borderRadius: '0.5rem' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.05)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                      >
-                        Profile
-                      </Link>
-                      <Link
-                        to="/my-trips"
-                        className="block px-4 py-2.5 text-sm transition-colors duration-150 font-serif"
-                        style={{ color: '#1A1814', borderRadius: '0.5rem' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.05)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                      >
-                        My Trips
-                      </Link>
-                      <Link
-                        to="/settings"
-                        className="block px-4 py-2.5 text-sm transition-colors duration-150 font-serif"
-                        style={{ color: '#1A1814', borderRadius: '0.5rem' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.05)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                      >
-                        Settings
-                      </Link>
-                      <div style={{ borderTop: '1px solid rgba(26, 24, 20, 0.08)', margin: '4px 8px' }} />
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2.5 text-sm transition-colors duration-150 font-serif"
-                        style={{ color: '#C85F3C', borderRadius: '0.5rem' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(200, 95, 60, 0.06)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                      >
-                        Sign out
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <div className="hidden sm:flex items-center gap-1">
-                <Link
-                  to="/login"
-                  className="px-3.5 py-1.5 text-sm font-medium font-serif transition-colors duration-200"
-                  style={{
-                    color: '#6B6560',
-                    borderRadius: '9999px',
-                    letterSpacing: '-0.02em',
-                    ...serifStyle,
-                  }}
-                  onMouseEnter={e => {
+        {/* ── Centered nav links ────────────────────────── */}
+        <nav
+          className="pointer-events-auto hidden md:flex items-center gap-0 absolute left-1/2"
+          style={{
+            transform: 'translateX(-50%)',
+            background: scrolled ? 'rgba(247, 244, 239, 0.90)' : 'rgba(247, 244, 239, 0.75)',
+            backdropFilter: 'blur(16px) saturate(140%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+            border: '1px solid rgba(26, 24, 20, 0.09)',
+            borderRadius: '9999px',
+            padding: '4px 6px',
+            boxShadow: scrolled
+              ? '0 4px 20px rgba(26, 24, 20, 0.09), 0 1px 4px rgba(26, 24, 20, 0.06)'
+              : '0 2px 10px rgba(26, 24, 20, 0.06)',
+            transition: 'all 0.3s ease',
+          }}
+          aria-label="Main navigation"
+        >
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontSize: '0.83rem',
+                  fontWeight: isActive ? 600 : 500,
+                  letterSpacing: '-0.01em',
+                  color: isActive ? '#1A1814' : '#6B6560',
+                  padding: '6px 14px',
+                  borderRadius: '9999px',
+                  background: isActive ? 'rgba(26, 24, 20, 0.07)' : 'transparent',
+                  transition: 'all 0.18s ease',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
                     (e.currentTarget as HTMLElement).style.color = '#1A1814';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.06)';
-                  }}
-                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.04)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
                     (e.currentTarget as HTMLElement).style.color = '#6B6560';
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  }}
-                >
-                  Sign in
-                </Link>
-                <Link
-                  to="/signup"
-                  className="px-3.5 py-1.5 text-sm font-medium font-serif transition-all duration-200"
-                  style={{
-                    color: '#F7F4EF',
-                    background: '#1A1814',
-                    borderRadius: '9999px',
-                    letterSpacing: '-0.02em',
-                    ...serifStyle,
-                  }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#C85F3C'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#1A1814'}
-                >
-                  Get started
-                </Link>
-              </div>
-            )}
+                  }
+                }}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-            {/* Mobile hamburger */}
-            <button
-              className="md:hidden flex flex-col items-center justify-center gap-[5px] p-2"
-              style={{ borderRadius: '9999px' }}
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle menu"
-            >
-              <motion.span
-                animate={mobileOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className="block"
-                style={{ width: 16, height: 1.5, background: '#1A1814', borderRadius: 2 }}
-              />
-              <motion.span
-                animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
-                transition={{ duration: 0.2 }}
-                className="block"
-                style={{ width: 16, height: 1.5, background: '#1A1814', borderRadius: 2 }}
-              />
-              <motion.span
-                animate={mobileOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className="block"
-                style={{ width: 16, height: 1.5, background: '#1A1814', borderRadius: 2 }}
-              />
-            </button>
-          </div>
+        {/* ── Right side ───────────────────────────────── */}
+        <div className="pointer-events-auto flex items-center gap-3 ml-auto">
+          {isAuthenticated ? (
+            <div className="relative" ref={dropdownRef}>
+              {/* Profile avatar icon only */}
+              <button
+                onClick={() => setDropdownOpen(prev => !prev)}
+                aria-label="Profile menu"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: '#C85F3C',
+                  color: '#FFFFFF',
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  border: dropdownOpen ? '2px solid #1A1814' : '2px solid transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 0.2s, transform 0.2s',
+                  boxShadow: '0 2px 8px rgba(200, 95, 60, 0.30)',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+              >
+                {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
+              </button>
+
+              {/* Dropdown */}
+              <AnimatePresence>
+                {dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className="absolute right-0 top-full mt-2 w-52 py-1.5 z-50"
+                    style={{
+                      background: '#F7F4EF',
+                      border: '1px solid rgba(26, 24, 20, 0.10)',
+                      borderRadius: '0.875rem',
+                      boxShadow: '0 8px 32px rgba(26, 24, 20, 0.12)',
+                    }}
+                  >
+                    {/* User info header */}
+                    <div style={{ padding: '10px 16px 10px', borderBottom: '1px solid rgba(26, 24, 20, 0.07)' }}>
+                      <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1A1814', margin: 0 }}>{user?.name}</p>
+                      <p style={{ fontSize: '0.75rem', color: '#9A958F', margin: 0, marginTop: 1 }}>{user?.email}</p>
+                    </div>
+                    {[
+                      { label: 'Profile', href: '/profile' },
+                      { label: 'My Trips', href: '/my-trips' },
+                      { label: 'Settings', href: '/settings' },
+                    ].map(link => (
+                      <Link
+                        key={link.href}
+                        to={link.href}
+                        className="block px-4 py-2.5"
+                        style={{
+                          fontFamily: '"Playfair Display", Georgia, serif',
+                          fontSize: '0.85rem',
+                          color: '#1A1814',
+                          textDecoration: 'none',
+                          borderRadius: '0.5rem',
+                          margin: '0 4px',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.05)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                    <div style={{ borderTop: '1px solid rgba(26, 24, 20, 0.07)', margin: '4px 8px' }} />
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2.5"
+                      style={{
+                        fontFamily: '"Playfair Display", Georgia, serif',
+                        fontSize: '0.85rem',
+                        color: '#C85F3C',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: '0.5rem',
+                        margin: '0 4px',
+                        width: 'calc(100% - 8px)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(200, 95, 60, 0.06)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                    >
+                      Sign out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-2">
+              <Link
+                to="/login"
+                style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontSize: '0.83rem',
+                  fontWeight: 500,
+                  color: '#6B6560',
+                  padding: '7px 16px',
+                  borderRadius: '9999px',
+                  textDecoration: 'none',
+                  transition: 'color 0.18s, background 0.18s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.color = '#1A1814';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.06)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.color = '#6B6560';
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+                }}
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                style={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontSize: '0.83rem',
+                  fontWeight: 600,
+                  color: '#F7F4EF',
+                  background: '#1A1814',
+                  padding: '7px 18px',
+                  borderRadius: '9999px',
+                  textDecoration: 'none',
+                  transition: 'background 0.18s',
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#C85F3C'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#1A1814'}
+              >
+                Get started
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden flex flex-col items-center justify-center gap-[5px]"
+            style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(247,244,239,0.80)', border: '1px solid rgba(26,24,20,0.10)', backdropFilter: 'blur(10px)', cursor: 'pointer' }}
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            <motion.span
+              animate={mobileOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="block"
+              style={{ width: 14, height: 1.5, background: '#1A1814', borderRadius: 2 }}
+            />
+            <motion.span
+              animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="block"
+              style={{ width: 14, height: 1.5, background: '#1A1814', borderRadius: 2 }}
+            />
+            <motion.span
+              animate={mobileOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="block"
+              style={{ width: 14, height: 1.5, background: '#1A1814', borderRadius: 2 }}
+            />
+          </button>
         </div>
-      </motion.nav>
-      </div>
+      </motion.header>
 
       {/* Mobile menu */}
       <AnimatePresence>
@@ -319,7 +323,7 @@ export default function Navigation() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed top-20 left-4 right-4 z-40"
+            className="fixed top-[68px] left-4 right-4 z-40"
           >
             <div
               className="overflow-hidden"
@@ -329,6 +333,7 @@ export default function Navigation() {
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '1px solid rgba(26, 24, 20, 0.10)',
                 borderRadius: '1rem',
+                boxShadow: '0 8px 32px rgba(26,24,20,0.10)',
               }}
             >
               <div className="py-2 px-2">
@@ -338,13 +343,15 @@ export default function Navigation() {
                     <Link
                       key={item.href}
                       to={item.href}
-                      className="block px-4 py-3 text-sm font-medium font-serif transition-colors duration-150"
+                      className="block px-4 py-3"
                       style={{
+                        fontFamily: '"Playfair Display", Georgia, serif',
+                        fontSize: '0.9rem',
+                        fontWeight: isActive ? 600 : 500,
                         color: isActive ? '#C85F3C' : '#1A1814',
                         borderRadius: '0.5rem',
                         background: isActive ? 'rgba(200, 95, 60, 0.08)' : 'transparent',
-                        letterSpacing: '-0.02em',
-                        ...serifStyle,
+                        textDecoration: 'none',
                       }}
                     >
                       {item.label}
@@ -354,13 +361,13 @@ export default function Navigation() {
                 <div style={{ borderTop: '1px solid rgba(26, 24, 20, 0.08)', margin: '8px 0' }} />
                 {isAuthenticated ? (
                   <>
-                    <Link to="/profile" className="block px-4 py-3 text-sm font-medium" style={{ color: '#1A1814', borderRadius: '0.5rem' }}>
+                    <Link to="/profile" className="block px-4 py-3" style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '0.9rem', color: '#1A1814', textDecoration: 'none', borderRadius: '0.5rem' }}>
                       Profile
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-3 text-sm font-medium"
-                      style={{ color: '#C85F3C', borderRadius: '0.5rem' }}
+                      className="block w-full text-left px-4 py-3"
+                      style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '0.9rem', color: '#C85F3C', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: '0.5rem' }}
                     >
                       Sign out
                     </button>
@@ -369,23 +376,15 @@ export default function Navigation() {
                   <div className="flex gap-2 px-2 pb-2">
                     <Link
                       to="/login"
-                      className="flex-1 text-center px-4 py-2.5 text-sm font-medium"
-                      style={{
-                        color: '#1A1814',
-                        border: '1px solid rgba(26, 24, 20, 0.15)',
-                        borderRadius: '0.5rem',
-                      }}
+                      className="flex-1 text-center px-4 py-2.5"
+                      style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '0.85rem', color: '#1A1814', border: '1px solid rgba(26, 24, 20, 0.15)', borderRadius: '0.5rem', textDecoration: 'none' }}
                     >
                       Sign in
                     </Link>
                     <Link
                       to="/signup"
-                      className="flex-1 text-center px-4 py-2.5 text-sm font-medium"
-                      style={{
-                        color: '#F7F4EF',
-                        background: '#1A1814',
-                        borderRadius: '0.5rem',
-                      }}
+                      className="flex-1 text-center px-4 py-2.5"
+                      style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '0.85rem', color: '#F7F4EF', background: '#1A1814', borderRadius: '0.5rem', textDecoration: 'none' }}
                     >
                       Get started
                     </Link>

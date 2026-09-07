@@ -450,7 +450,9 @@ const generateTripPlan = async (preferences) => {
     // overnightCount = how many nights are spent travelling (affects hotel & day count)
     const overnightCount = planArrivalInfo.nightsInTransit || 0;
     // usableDays = calendar days the user is actually at destination (for food/activity calc)
-    const usableDays = Math.max(1, durationDays - overnightCount);
+    const usableDays = isReturnTrip 
+      ? Math.max(1, durationDays - overnightCount)
+      : Math.max(1, (Number(nights) || 0) + 1);
 
     // Generate per-plan itinerary based on this plan's specific transport
     const durationStr = typeof planDuration === 'object' && planDuration.hours !== undefined
@@ -549,8 +551,8 @@ const generateTripPlan = async (preferences) => {
   if (algorithmResult.plans.length > 0) {
     // Map algorithm plans to tier names with category labels
     const tierNames = ['budget', 'comfort', 'premium', 'popular', 'alternative'];
-    // Generate MORE plans - take up to 10 best plans
-    algorithmPlans = algorithmResult.plans.slice(0, 10).map((plan, idx) => {
+    // Generate up to 5 plans (user requested 5 options)
+    algorithmPlans = algorithmResult.plans.slice(0, 5).map((plan, idx) => {
       const tierName = plan.category ? plan.category.toLowerCase().replace(/\s+/g, '-') : tierNames[idx] || 'comfort';
       return convertAlgorithmPlan(plan, tierName, idx);
     });
@@ -560,16 +562,19 @@ const generateTripPlan = async (preferences) => {
   // NEW: If no legacy plans generated, convert algorithm plans to legacy format
   if (plans.length === 0 && algorithmPlans.length > 0) {
     console.log('🔄 Converting algorithm plans to legacy format');
-    // Convert MORE plans for user choice - up to 5
+    // Convert up to 5 plans for user choice
+    const tierLabels = ['Budget', 'Comfort', 'Premium', 'Best Value', 'Alternative'];
     for (let i = 0; i < Math.min(5, algorithmPlans.length); i++) {
       const algoPlan = algorithmPlans[i];
-      const tierNames = ['Budget', 'Comfort', 'Premium'];
+      // Derive a readable tier label from category or fallback
+      const rawCategory = algoPlan.tier || '';
+      const tierLabel = tierLabels[i] || rawCategory || 'Option';
       // Safely get transport name as string
       const transportName = typeof algoPlan.transport?.name === 'string'
         ? algoPlan.transport.name
         : (algoPlan.transport?.name?.toString() || 'Transport');
       
-      console.log(`\n   Plan ${i + 1} (${tierNames[i]}):`);
+      console.log(`\n   Plan ${i + 1} (${tierLabel}):`);
       console.log(`      Transport: ${algoPlan.transport?.mode} - ${transportName} (₹${algoPlan.breakdown.transportTotal})`);
       console.log(`      Accommodation: ${algoPlan.accommodation?.name} ${algoPlan.accommodation?.stars}★ (₹${algoPlan.breakdown.accommodationTotal})`);
       console.log(`      Meals: ₹${algoPlan.breakdown.foodTotal}, Activities: ₹${algoPlan.breakdown.activityTotal}`);
@@ -577,9 +582,9 @@ const generateTripPlan = async (preferences) => {
       
       plans.push({
         id: uuidv4(),
-        tier: tierNames[i] || 'Comfort',
+        tier: tierLabel,
         description: algoPlan.name,
-        nights: algoPlan.nights,  // Per-plan adjusted nights
+        nights: algoPlan.nights,
         requestedNights: algoPlan.requestedNights,
         arrivalInfo: algoPlan.arrivalInfo,
         transport: algoPlan.transport,

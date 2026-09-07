@@ -352,7 +352,7 @@ class TripAlgorithmService {
 
             // Sort by score to get quality options, not just cheapest
             const sortedByScore = [...overBudgetPlans].sort((a, b) => b.score - a.score);
-            rankedPlans = sortedByScore.slice(0, 3);
+            rankedPlans = sortedByScore.slice(0, 5);
 
             const gap = overBudgetPlans[0].totalCost - budget;
             warnings.push({

@@ -241,7 +241,7 @@ function HeroCarousel() {
 
 export default function LandingPage() {
   return (
-    <div style={{ background: '#F7F4EF', minHeight: '100vh' }}>
+    <div style={{ background: '#F7F4EF', minHeight: '100vh', fontFamily: 'var(--font-outfit)' }}>
       {/* Floating nav */}
       <Navigation />
 

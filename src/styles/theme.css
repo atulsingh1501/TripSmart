@@ -106,7 +106,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-outfit);
+  --font-sans: var(--font-serif);
   --font-serif: var(--font-serif);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);

@@ -100,6 +100,15 @@ router.get('/trips/:tripId', authMiddleware, async (req, res) => {
         const { tripId } = req.params;
         const userId = req.userId;
 
+        // If this is a fake trip from mock data, return 404 immediately instead of throwing CastError
+        const mongoose = require('mongoose');
+        if (!mongoose.Types.ObjectId.isValid(tripId)) {
+            return res.status(404).json({
+                success: false,
+                error: 'Trip not found (mock trip)'
+            });
+        }
+
         const trip = await Trip.findOne({ _id: tripId, userId }).lean();
 
         if (!trip) {

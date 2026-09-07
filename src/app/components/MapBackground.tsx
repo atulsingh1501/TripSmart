@@ -111,7 +111,7 @@ export default function MapBackground({
 
         tileRef.current = L.tileLayer(
             theme === 'dark' ? TILES.dark : TILES.light,
-            { subdomains: 'abcd', maxZoom: 19 }
+            { subdomains: 'abcd', maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' }
         ).addTo(mapRef.current);
 
         return () => {
@@ -129,7 +129,7 @@ export default function MapBackground({
         if (tileRef.current) map.removeLayer(tileRef.current);
         tileRef.current = L.tileLayer(
             theme === 'dark' ? TILES.dark : TILES.light,
-            { subdomains: 'abcd', maxZoom: 19 }
+            { subdomains: 'abcd', maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' }
         ).addTo(map);
     }, [theme]);
 
