@@ -313,6 +313,16 @@ class TripAlgorithmService {
                     usedIds.add(bestValuePlan.id);
                     rankedPlans.push({ ...bestValuePlan, category: `Best Value ${modeLabel}` });
                     console.log(`   ✅ Best Value ${modeLabel}: ${bestValuePlan.selections.transport.name} + ${bestValuePlan.selections.accommodation.name?.substring(0,25)} = ₹${bestValuePlan.totalCost.toLocaleString()} (Δ ₹${Math.abs(bestValuePlan.totalCost - budget).toLocaleString()} from budget)`);
+                } else if (overBudgetFallback) {
+                    // ── GUARANTEE: at least 2 plans per mode ──
+                    // No second in-budget plan found → use cheapest over-budget as 2nd slot
+                    usedIds.add(overBudgetFallback.id || `over-${mode}`);
+                    rankedPlans.push({
+                        ...overBudgetFallback,
+                        isOverBudget: true,
+                        category: `Best Value ${modeLabel} (Slightly Over Budget)`
+                    });
+                    console.log(`   ⚠️  Guarantee 2nd ${modeLabel} slot: over-budget fallback ₹${overBudgetFallback.totalCost.toLocaleString()}`);
                 }
 
                 // ── PREMIUM: should sit ABOVE the main plan / budget ──
@@ -320,15 +330,16 @@ class TripAlgorithmService {
                 const mainCost = bestValuePlan?.totalCost ?? budgetPlan.totalCost;
                 const maxInBudget = sortedByCostDesc[0];
                 const wantsOverBudgetPremium = !maxInBudget || maxInBudget.totalCost < budget - BUDGET_BAND;
+                const overBudgetAlreadyUsed = !bestValuePlan && overBudgetFallback; // used it for 2nd slot above
 
-                if (overBudgetFallback && (wantsOverBudgetPremium || overBudgetFallback.totalCost > mainCost)) {
+                if (!overBudgetAlreadyUsed && overBudgetFallback && (wantsOverBudgetPremium || overBudgetFallback.totalCost > mainCost)) {
                     rankedPlans.push({
                         ...overBudgetFallback,
                         isOverBudget: true,
                         category: `Premium ${modeLabel}`
                     });
                     console.log(`   ⚠️  Premium ${modeLabel} (higher / over budget): ₹${overBudgetFallback.totalCost.toLocaleString()} (₹${overBudgetFallback.overBudgetBy.toLocaleString()} over)`);
-                } else {
+                } else if (!overBudgetAlreadyUsed) {
                     const premiumPlan = sortedByCostDesc.find(p => !usedIds.has(p.id) && p.totalCost > mainCost);
                     if (premiumPlan) {
                         usedIds.add(premiumPlan.id);

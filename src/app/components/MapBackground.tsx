@@ -229,16 +229,16 @@ export default function MapBackground({
             );
         });
 
-        // Train routes – amber/orange dashed lines, slightly thicker
+        // Train routes – emerald green dashed lines (theme color)
         trainPaths.forEach(path => {
             if (path.length < 2) return;
             path.forEach(pt => allRoutePts.push(pt as L.LatLngExpression));
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
-                    color: '#fb923c',
-                    weight: 2.5,
-                    opacity: 0.85,
-                    dashArray: '8 4',
+                    color: '#50C878',
+                    weight: 3,
+                    opacity: 0.9,
+                    dashArray: '10 5',
                     pane: 'routePane',
                 }).addTo(map)
             );

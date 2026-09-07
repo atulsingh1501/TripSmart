@@ -1,5 +1,5 @@
 // src/services/TripAlgorithmService.ts
-import { UserPreferences, TripPlan, TripOption, BudgetSplit, Category } from '../types/trip.types';
+import { UserPreferences, TripPlan, TripOption, BudgetSplit, Category } from './types';
 
 export class TripAlgorithmService {
 

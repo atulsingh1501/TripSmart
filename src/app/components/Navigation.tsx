@@ -13,8 +13,6 @@ const navItems = [
 // Pages that have a dark background — navigation should adapt
 const DARK_PAGES = ['/results', '/trip-details'];
 
-// Pages that have a dark background — navigation should adapt
-const DARK_PAGES = ['/results', '/trip-details'];
 
 export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
@@ -27,13 +25,13 @@ export default function Navigation() {
 
   const isDark = DARK_PAGES.some(p => location.pathname.startsWith(p));
 
-  // Theme tokens
-  const bg      = isDark ? 'rgba(13,14,26,0.85)' : 'rgba(247, 244, 239, 0.88)';
-  const bgHover = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(26,24,20,0.06)';
-  const textCol = isDark ? 'rgba(240,237,232,0.85)' : '#6B6560';
-  const textAct = isDark ? '#f0ede8' : '#1A1814';
-  const border  = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(26, 24, 20, 0.09)';
-  const brandCol = isDark ? '#f0ede8' : '#1A1814';
+  // Theme tokens — 4-color mint/emerald palette for dark pages
+  const bg      = isDark ? 'rgba(1,50,32,0.88)' : 'rgba(247, 244, 239, 0.88)';
+  const bgHover = isDark ? 'rgba(80,200,120,0.10)' : 'rgba(26,24,20,0.06)';
+  const textCol = isDark ? 'rgba(209,242,235,0.7)' : '#6B6560';
+  const textAct = isDark ? '#D1F2EB' : '#1A1814';
+  const border  = isDark ? 'rgba(80,200,120,0.18)' : 'rgba(26, 24, 20, 0.09)';
+  const brandCol = isDark ? '#D1F2EB' : '#1A1814';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -131,7 +129,9 @@ export default function Navigation() {
                   color: isActive ? textAct : textCol,
                   padding: '6px 14px',
                   borderRadius: '9999px',
-                  background: isActive ? (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(26, 24, 20, 0.07)') : 'transparent',
+                  background: isActive
+                    ? (isDark ? 'rgba(80,200,120,0.18)' : 'rgba(26, 24, 20, 0.07)')
+                    : 'transparent',
                   transition: 'all 0.18s ease',
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
@@ -167,8 +167,8 @@ export default function Navigation() {
                   width: 36,
                   height: 36,
                   borderRadius: '50%',
-                  background: '#C85F3C',
-                  color: '#FFFFFF',
+                  background: isDark ? '#50C878' : '#C85F3C',
+                  color: isDark ? '#013220' : '#FFFFFF',
                   fontFamily: '"Playfair Display", Georgia, serif',
                   fontSize: '0.78rem',
                   fontWeight: 700,
@@ -178,7 +178,7 @@ export default function Navigation() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'border-color 0.2s, transform 0.2s',
-                  boxShadow: '0 2px 8px rgba(200, 95, 60, 0.30)',
+                  boxShadow: isDark ? '0 2px 8px rgba(80,200,120,0.30)' : '0 2px 8px rgba(200, 95, 60, 0.30)',
                   flexShrink: 0,
                 }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'}
@@ -288,15 +288,15 @@ export default function Navigation() {
                   fontFamily: '"Playfair Display", Georgia, serif',
                   fontSize: '0.83rem',
                   fontWeight: 600,
-                  color: '#F7F4EF',
-                  background: '#1A1814',
+                  color: isDark ? '#013220' : '#F7F4EF',
+                  background: isDark ? '#50C878' : '#1A1814',
                   padding: '7px 18px',
                   borderRadius: '9999px',
                   textDecoration: 'none',
                   transition: 'background 0.18s',
                 }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#C85F3C'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#1A1814'}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = isDark ? '#D1F2EB' : '#C85F3C'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = isDark ? '#50C878' : '#1A1814'}
               >
                 Get started
               </Link>
