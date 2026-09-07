@@ -157,7 +157,9 @@ function transformTrains(trains, userClasses = [], travelers = 1, isRoundTrip = 
                 departure: train.departure,
                 arrival: train.arrival,
                 duration: train.duration,
-                trainType: train.trainType
+                trainType: train.trainType,
+                // Preserve the actual track waypoints for map rendering
+                routePath: train.routePath || null
             }
         };
     });

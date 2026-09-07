@@ -330,6 +330,8 @@ export interface FlightOption {
   mode?: 'train' | 'flight' | 'bus';
   type?: 'train' | 'flight' | 'bus';
   name?: string;
+  /** Actual train track waypoints [lat,lng][] for map rendering */
+  routePath?: [number, number][];
 }
 
 export interface HotelOption {
@@ -614,6 +616,8 @@ function transformTripResponse(backendData: BackendTripResponse): TripResponse {
       mode: transportMode,
       type: transportMode,
       name: transportDetails.trainName || transportDetails.airline || plan.transport?.name || 'Unknown',
+      // Pass through the actual train track coordinates for map rendering
+      routePath: transportMode === 'train' ? (transportDetails.routePath || null) : undefined,
     };
 
     const planItinerarySource = (plan.itinerary && plan.itinerary.length > 0)

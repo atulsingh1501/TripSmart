@@ -10,6 +10,12 @@ const navItems = [
   { label: 'About', href: '/about' },
 ];
 
+// Pages that have a dark background — navigation should adapt
+const DARK_PAGES = ['/results', '/trip-details'];
+
+// Pages that have a dark background — navigation should adapt
+const DARK_PAGES = ['/results', '/trip-details'];
+
 export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -18,6 +24,16 @@ export default function Navigation() {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isDark = DARK_PAGES.some(p => location.pathname.startsWith(p));
+
+  // Theme tokens
+  const bg      = isDark ? 'rgba(13,14,26,0.85)' : 'rgba(247, 244, 239, 0.88)';
+  const bgHover = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(26,24,20,0.06)';
+  const textCol = isDark ? 'rgba(240,237,232,0.85)' : '#6B6560';
+  const textAct = isDark ? '#f0ede8' : '#1A1814';
+  const border  = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(26, 24, 20, 0.09)';
+  const brandCol = isDark ? '#f0ede8' : '#1A1814';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -74,8 +90,9 @@ export default function Navigation() {
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: '#1A1814',
+              color: brandCol,
               lineHeight: 1,
+              transition: 'color 0.3s',
             }}
           >
             TRIPSMART
@@ -87,15 +104,15 @@ export default function Navigation() {
           className="pointer-events-auto hidden md:flex items-center gap-0 absolute left-1/2"
           style={{
             transform: 'translateX(-50%)',
-            background: scrolled ? 'rgba(247, 244, 239, 0.90)' : 'rgba(247, 244, 239, 0.75)',
+            background: scrolled ? bg.replace('0.88', '0.95') : bg,
             backdropFilter: 'blur(16px) saturate(140%)',
             WebkitBackdropFilter: 'blur(16px) saturate(140%)',
-            border: '1px solid rgba(26, 24, 20, 0.09)',
+            border: `1px solid ${border}`,
             borderRadius: '9999px',
             padding: '4px 6px',
             boxShadow: scrolled
-              ? '0 4px 20px rgba(26, 24, 20, 0.09), 0 1px 4px rgba(26, 24, 20, 0.06)'
-              : '0 2px 10px rgba(26, 24, 20, 0.06)',
+              ? (isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(26, 24, 20, 0.09)')
+              : (isDark ? '0 2px 12px rgba(0,0,0,0.2)' : '0 2px 10px rgba(26, 24, 20, 0.06)'),
             transition: 'all 0.3s ease',
           }}
           aria-label="Main navigation"
@@ -111,23 +128,23 @@ export default function Navigation() {
                   fontSize: '0.83rem',
                   fontWeight: isActive ? 600 : 500,
                   letterSpacing: '-0.01em',
-                  color: isActive ? '#1A1814' : '#6B6560',
+                  color: isActive ? textAct : textCol,
                   padding: '6px 14px',
                   borderRadius: '9999px',
-                  background: isActive ? 'rgba(26, 24, 20, 0.07)' : 'transparent',
+                  background: isActive ? (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(26, 24, 20, 0.07)') : 'transparent',
                   transition: 'all 0.18s ease',
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={e => {
                   if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.color = '#1A1814';
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(26, 24, 20, 0.04)';
+                    (e.currentTarget as HTMLElement).style.color = textAct;
+                    (e.currentTarget as HTMLElement).style.background = bgHover;
                   }
                 }}
                 onMouseLeave={e => {
                   if (!isActive) {
-                    (e.currentTarget as HTMLElement).style.color = '#6B6560';
+                    (e.currentTarget as HTMLElement).style.color = textCol;
                     (e.currentTarget as HTMLElement).style.background = 'transparent';
                   }
                 }}
