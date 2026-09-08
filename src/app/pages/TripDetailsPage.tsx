@@ -13,8 +13,9 @@ import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { formatINR, tripsAPI, type TripPlanData } from '../../services/api';
 import { printItinerary } from '../../utils/itineraryExport';
-import { arcPath, getCoordinates, getCoordinatesByIATA } from '../../data/cityCoordinates';
+import { arcPath, getCoordinates, getCoordinatesByIATA, scatterPlacesInCity } from '../../data/cityCoordinates';
 import { getRailwayCorridors } from '../../data/railwayCorridors';
+import PlacesMap from '../components/PlacesMap';
 
 // ── 4-color palette ────────────────────────────────────────────────────────
 const C = {
@@ -160,7 +161,7 @@ export default function TripDetailsPage() {
   const [isSavingDraft, setIsSaving]  = useState(false);
   const dayRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const { tripPlan, formData, arrivalInfo } = location.state || {};
+  const { tripPlan, formData, arrivalInfo, destinationAttractions } = location.state || {};
 
   // ── No-plan fallback ──
   if (!tripPlan) {
@@ -248,7 +249,8 @@ export default function TripDetailsPage() {
     const depTime  = plan.flight?.outbound?.departureTime || planArrivalInfo?.departureTime || '09:00';
     const arrTime  = plan.flight?.outbound?.arrivalTime  || planArrivalInfo?.arrivalTime   || '12:00';
     const dur      = fmtDur(plan.flight?.outbound?.duration) || '2h';
-    const totalDays = (usableDays ?? parseInt(plan.duration?.match(/\d+/)?.[0] || '3')) + overnightCount;
+    const durationStr = typeof plan.duration === 'string' ? plan.duration : String(plan.duration || '3');
+    const totalDays = (usableDays ?? parseInt(durationStr.match(/\d+/)?.[0] || '3')) + overnightCount;
     const days: any[] = [];
 
     for (let d = 1; d <= totalDays; d++) {
@@ -298,7 +300,12 @@ export default function TripDetailsPage() {
     return days;
   };
 
-  const itineraryDays = buildDays();
+  let itineraryDays: any[] = [];
+  try {
+    itineraryDays = buildDays();
+  } catch {
+    itineraryDays = [];
+  }
 
   // ── Map route ─────────────────────────────────────────────────────────
   const outboundAny: any = plan.flight?.outbound || {};
@@ -306,22 +313,48 @@ export default function TripDetailsPage() {
   const destinationCoords = resolveCoordinates(outboundAny.arrival,   formData?.destination);
   let trainPaths:  [number, number][][] = [];
   let flightPaths: [number, number][][] = [];
-  if (isTrainTransport) {
-    const corridors = getRailwayCorridors(formData?.origin || '', formData?.destination || '');
-    if (corridors && corridors.length > 0) trainPaths = corridors;
-    else if (Array.isArray(outboundAny.routePath) && outboundAny.routePath.length > 1) trainPaths = [outboundAny.routePath];
-    else if (originCoords && destinationCoords) trainPaths = [[originCoords, destinationCoords]];
-  } else if (originCoords && destinationCoords) {
-    flightPaths = [arcPath(originCoords, destinationCoords)];
+  try {
+    if (isTrainTransport) {
+      const originName = typeof formData?.origin === 'string' ? formData.origin : '';
+      const dest = typeof formData?.destination === 'string' ? formData.destination : '';
+      const corridors = originName && dest ? getRailwayCorridors(originName, dest) : null;
+      if (corridors && corridors.length > 0) trainPaths = corridors;
+      else if (Array.isArray(outboundAny.routePath) && outboundAny.routePath.length > 1) trainPaths = [outboundAny.routePath];
+      else if (originCoords && destinationCoords) trainPaths = [[originCoords, destinationCoords]];
+    } else if (originCoords && destinationCoords) {
+      flightPaths = [arcPath(originCoords, destinationCoords)];
+    }
+  } catch {
+    trainPaths = [];
+    flightPaths = [];
   }
 
-  const topActivities = (plan.activities?.list || []).slice(0, 4);
+  const topActivities = Array.isArray(plan.activities?.list) ? plan.activities.list.slice(0, 4) : [];
+  let selectedPlaceNames: string[] = [];
+  try {
+    if (Array.isArray(formData?.selectedPlaceNames)) {
+      selectedPlaceNames = formData.selectedPlaceNames.filter((n: unknown) => typeof n === 'string' && n);
+    } else if (Array.isArray(formData?.selectedPlaces) && formData.selectedPlaces.every((x: any) => typeof x === 'string')) {
+      const attractions = Array.isArray(destinationAttractions) ? destinationAttractions : [];
+      selectedPlaceNames = attractions
+        .filter((a: any) => formData.selectedPlaces.includes(a.id))
+        .map((a: any) => a.name)
+        .filter((n: unknown) => typeof n === 'string' && n);
+    }
+  } catch {
+    selectedPlaceNames = [];
+  }
+  const destName = typeof formData?.destination === 'string' ? formData.destination : '';
+  const placePins = scatterPlacesInCity(destName, selectedPlaceNames);
+  const showPlacesMap = placePins.length > 0;
+
+  const bd = plan.breakdown || {};
   const breakdown = [
-    { label: 'Transport',     val: plan.breakdown.transport },
-    { label: 'Accommodation', val: plan.breakdown.accommodation },
-    { label: 'Activities',    val: plan.breakdown.activities },
-    { label: 'Meals',         val: plan.breakdown.meals },
-    { label: 'Misc',          val: plan.breakdown.misc },
+    { label: 'Transport',     val: bd.transport || 0 },
+    { label: 'Accommodation', val: bd.accommodation || 0 },
+    { label: 'Activities',    val: bd.activities || 0 },
+    { label: 'Meals',         val: bd.meals || 0 },
+    { label: 'Misc',          val: bd.misc || 0 },
   ].filter(x => x.val > 0)
    .map(x => ({ ...x, pct: plan.price > 0 ? Math.round((x.val / plan.price) * 100) : 0 }));
 
@@ -376,7 +409,16 @@ export default function TripDetailsPage() {
 
       {/* Map background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <MapBackground origin={formData?.origin} destination={formData?.destination} stops={formData?.stops || []} showDirectDistance flightPaths={flightPaths} trainPaths={trainPaths} />
+        <MapBackground
+          origin={formData?.origin}
+          destination={formData?.destination}
+          stops={formData?.stops || []}
+          showDirectDistance={!showPlacesMap}
+          flightPaths={showPlacesMap ? [] : flightPaths}
+          trainPaths={showPlacesMap ? [] : trainPaths}
+          places={placePins}
+          focusPlaces={showPlacesMap}
+        />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #013220 0%, rgba(1,50,32,0.97) 32%, rgba(11,110,79,0.55) 58%, rgba(80,200,120,0.05) 76%, transparent 90%)' }} />
       </div>
 
@@ -387,7 +429,7 @@ export default function TripDetailsPage() {
       <div className="relative z-10 flex min-h-screen pt-16">
 
         {/* ─── LEFT: scrollable day journey ─────────────────────────── */}
-        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 64px)', scrollbarWidth: 'thin', scrollbarColor: `${C.teal} transparent` }}>
+        <div className="min-w-0 flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 64px)', scrollbarWidth: 'thin', scrollbarColor: `${C.teal} transparent` }}>
 
           {/* Header hero */}
           <motion.div initial={{ opacity: 0, y: -24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, ease: 'easeOut' }} className="px-6 pt-8 pb-4">
@@ -406,7 +448,7 @@ export default function TripDetailsPage() {
                 <div className="flex flex-wrap gap-3 mt-2" style={{ fontSize: '0.73rem', color: C.textSub }}>
                   <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {formData?.travelers || 1} Traveller{(formData?.travelers || 1) > 1 ? 's' : ''}</span>
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {plan.duration}</span>
-                  <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> {plan.rating?.toFixed(1) || '4.5'}</span>
+                  <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-yellow-400 text-yellow-400" /> {typeof plan.rating === 'number' ? plan.rating.toFixed(1) : '4.5'}</span>
                 </div>
               </div>
               <div className="text-right">
@@ -443,6 +485,15 @@ export default function TripDetailsPage() {
               ))}
             </div>
           </motion.div>
+
+          {showPlacesMap && (
+            <div className="px-6 pb-4 md:hidden">
+              <div className="flex items-center gap-2 mb-2" style={{ color: C.mint, fontWeight: 700, fontSize: '0.85rem' }}>
+                <MapPin className="h-4 w-4" /> Places in {formData?.destination}
+              </div>
+              <PlacesMap places={placePins} cityLabel={formData?.destination} />
+            </div>
+          )}
 
           {/* Day sections */}
           <div className="px-6 pb-28 space-y-4">
@@ -486,9 +537,25 @@ export default function TripDetailsPage() {
         </div>
 
         {/* ─── RIGHT: fixed sidebar ──────────────────────────────────── */}
-        <div className="hidden md:flex flex-col w-[300px] shrink-0 overflow-y-auto"
+        <div className="hidden md:flex flex-col w-[clamp(380px,42vw,520px)] shrink-0 overflow-y-auto"
           style={{ maxHeight: 'calc(100vh - 64px)', borderLeft: `1px solid ${C.cardBorder}`, scrollbarWidth: 'thin', scrollbarColor: `${C.teal} transparent` }}>
           <div className="p-5 space-y-4">
+
+            {showPlacesMap && (
+              <div>
+                <div className="flex items-center gap-2 mb-3" style={{ color: C.mint, fontWeight: 700, fontSize: '0.85rem' }}>
+                  <MapPin className="h-4 w-4" /> Places in {formData?.destination}
+                </div>
+                <PlacesMap places={placePins} cityLabel={formData?.destination} />
+                <div className="mt-2 space-y-1 max-h-28 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                  {placePins.map((p, i) => (
+                    <p key={p.name} style={{ fontSize: '0.7rem', color: C.textSub }}>
+                      <span style={{ color: C.emerald, fontWeight: 700 }}>{i + 1}.</span> {p.name}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Book CTA */}
             <div className="rounded-2xl p-5" style={{ background: C.card, border: `1px solid ${C.cardBorder}` }}>
@@ -543,7 +610,7 @@ export default function TripDetailsPage() {
               </p>
               <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${C.cardBorder}` }}>
                 <div style={{ fontSize: '0.68rem', color: C.textDim, marginBottom: 2 }}>Transport cost</div>
-                <div style={{ fontWeight: 700, color: C.emerald }}>{formatINR(plan.breakdown.transport || 0)}</div>
+                <div style={{ fontWeight: 700, color: C.emerald }}>{formatINR(bd.transport || 0)}</div>
               </div>
             </div>
 
@@ -555,7 +622,7 @@ export default function TripDetailsPage() {
                 </div>
                 <p className="font-semibold text-sm" style={{ color: C.mint }}>{plan.hotel.name || 'Selected Hotel'}</p>
                 <p style={{ fontSize: '0.73rem', color: C.textSub, marginTop: 2 }}>
-                  {'★'.repeat(plan.hotel.stars || 3)} · {plan.hotel.location || formData?.destination}
+                  {'★'.repeat(Math.max(1, Math.min(5, Math.round(Number(plan.hotel.stars) || 3))))} · {plan.hotel.location || formData?.destination}
                 </p>
                 {(plan.hotel.pricePerNight ?? 0) > 0 && (
                   <p style={{ fontSize: '0.7rem', color: C.textDim, marginTop: 4 }}>
@@ -564,7 +631,7 @@ export default function TripDetailsPage() {
                 )}
                 <div className="flex items-center gap-1 mt-2" style={{ fontSize: '0.7rem', color: C.textDim }}>
                   <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  {(plan.hotel.rating || 4.2).toFixed(1)} · {(plan.hotel.reviews || 100).toLocaleString('en-IN')} reviews
+                  {(typeof plan.hotel.rating === 'number' ? plan.hotel.rating : 4.2).toFixed(1)} · {(plan.hotel.reviews || 100).toLocaleString('en-IN')} reviews
                 </div>
               </div>
             )}
@@ -614,4 +681,4 @@ export default function TripDetailsPage() {
     </motion.div>
   );
 }
-
+

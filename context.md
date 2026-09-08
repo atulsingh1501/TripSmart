@@ -1,3 +1,5 @@
+THe trip
+
 # TripSmart — Agent Context & Progress Tracker
 
 > **Keep this file updated** after every major change. Check off items as they complete.
@@ -6,26 +8,26 @@
 
 ## 📝 Recent Changes
 
-| Date | Change |
-|------|--------|
-| 2026-08-24 | **Nav bar:** Centered via full-width flex wrapper (fixes Framer Motion `transform` override). Nav labels/logo use Playfair Display (`--font-serif`) to match hero/destination place names. |
+| Date       | Change                                                                                                                                                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-24 | **Nav bar:** Centered via full-width flex wrapper (fixes Framer Motion `transform` override). Nav labels/logo use Playfair Display (`--font-serif`) to match hero/destination place names.                                                                |
 | 2026-08-22 | **Multi-day transit itinerary:** `generateItinerary()` + `buildItineraryDays()` now use `totalDays = overnightCount + usableDays`. One "In Transit" tab per overnight leg (no collapse). `plan.duration` = `"${overnightCount + usableDays} days"`. |
-| 2026-08-22 | **Overnight day count fix:** Backend breakdown stores `overnightCount`, `usableDays`, `nightsAtDestination`. Frontend validates per-plan itinerary length. |
-| 2026-08-22 | **Light mode fix:** `.plan-trip-panel` CSS overrides for PlanTripPage white text. |
-| 2026-08-22 | **Trip.js schema:** Added `transportDetails`, `meals`, `breakdown` sub-schemas + Razorpay booking fields. |
+| 2026-08-22 | **Overnight day count fix:** Backend breakdown stores `overnightCount`, `usableDays`, `nightsAtDestination`. Frontend validates per-plan itinerary length.                                                                                              |
+| 2026-08-22 | **Light mode fix:** `.plan-trip-panel` CSS overrides for PlanTripPage white text.                                                                                                                                                                           |
+| 2026-08-22 | **Trip.js schema:** Added `transportDetails`, `meals`, `breakdown` sub-schemas + Razorpay booking fields.                                                                                                                                               |
 
 ---
 
 ## 📦 Tech Stack
 
-| Layer | Tech |
-|---|---|
-| Frontend | React + Vite + TypeScript |
-| Styling | Tailwind CSS + ShadCN/Radix |
-| Backend | Node.js + Express |
-| Database | **MongoDB** (via Mongoose) — ✅ **Correct choice** |
-| Auth | JWT (stored in DB via User model) |
-| Maps | Leaflet.js (react-leaflet) |
+| Layer     | Tech                                                                                                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Frontend  | React + Vite + TypeScript                                                                                                |
+| Styling   | Tailwind CSS + ShadCN/Radix                                                                                              |
+| Backend   | Node.js + Express                                                                                                        |
+| Database  | **MongoDB** (via Mongoose) — ✅ **Correct choice**                                                          |
+| Auth      | JWT (stored in DB via User model)                                                                                        |
+| Maps      | Leaflet.js (react-leaflet)                                                                                               |
 | Transport | Train: local JSON (EXP-TRAINS.json + MongoDB Train model), Flights: local JSON (flights data), Hotels: hotel_details.csv |
 
 ---
@@ -58,21 +60,24 @@ Backend (Express - port 5000)
 Located in [`trip-algorithm.service.js`](file:///d:/TripSmart/backend/src/services/trip-algorithm.service.js)
 
 **Clock metaphor:**
+
 - Transport → Hour hand (highest priority, preserved longest)
 - Accommodation → 30-min hand
 - Meal → Minute hand
 - Activity → Second hand (lowest priority, downgraded first)
 
-**Phase 1:** Finds ALL feasible combos within budget.  
+**Phase 1:** Finds ALL feasible combos within budget.
 **Phase 2:** Selects Budget / Best Value / Premium per transport mode.
 
 `BACKTRACK_ORDER = ['activity', 'meal', 'accommodation', 'transport']`
 
 **Key calculation: `_calculateNightsInTransit(transport)`**
+
 - Uses departure time + duration to count midnight crossings
 - Already tracks `nightsUsed` in breakdown per plan ✅
 
 **Itinerary day model (updated):**
+
 ```
 totalDays = overnightCount + usableDays   ← must match plan.duration
 
@@ -85,6 +90,7 @@ Days (overnightCount+1)..N → usableDays at destination:
 Example: 2-night train + 3 usable days = 5 tabs
   Day 1: In Transit | Day 2: In Transit | Day 3: Arrive + Check-in | Day 4: Explore | Day 5: Check-out
 ```
+
 - Implemented in `generateItinerary()` (`trips.js`) and `buildItineraryDays()` (`TripDetailsPage.tsx`)
 - Frontend no longer collapses transit into a single "Transit Day"
 - Validation: `plan.itinerary.length === overnightCount + usableDays`
@@ -100,11 +106,13 @@ Example: 2-night train + 3 usable days = 5 tabs
   - Scales well for read-heavy trip querying
 
 **Models:**
+
 - `Trip.js` — Core trip + itinerary + booking
 - `User.js` — Auth + preferences
 - `Train.js` — Indian Railways data (Mongoose model over MongoDB)
 
 **⚠️ SCHEMA GAPS (needs updating):**
+
 - ~~`Trip.plans[].transport` is `Mixed` — needs structured sub-schema~~ ✅ Added `transportDetails` sub-schema + kept Mixed for compat
 - ~~No `meals` field in plans~~ ✅ Added `meals` sub-schema
 - ~~No `overnightCount` / `usableDays` stored in breakdown~~ ✅ Added to `breakdown` sub-schema + trip-level fields
@@ -114,18 +122,21 @@ Example: 2-night train + 3 usable days = 5 tabs
 ## 🚌 Transport Data Sources
 
 ### Trains (current)
+
 - **Data:** `EXP-TRAINS.json` (17MB raw IRCTC-style data) + MongoDB `Train` model
 - **Cost:** Calculated from fare tables in data (per class: SL, 3A, 2A, 1A)
 - **Future API:** [RapidAPI — Indian Railways API](https://rapidapi.com/search/indian+railway) or [erail.in](https://erail.in/) for live data
 - **For fare:** [ixigo Train](https://www.ixigo.com/trains) or official IRCTC fare API (restricted)
 
 ### Flights (current)
+
 - **Data:** Local JSON in `src/data/flights.js`
 - **Future API:** [Amadeus Flight Offers Search API](https://developers.amadeus.com/self-service/category/flights/api-doc/flight-offers-search) — free tier available. Keys already in `.env.example`.
   - Or: [Skyscanner via RapidAPI](https://rapidapi.com/skyscanner/api/skyscanner-flight-search)
   - Or: [Duffel API](https://duffel.com/docs/api) — cleaner REST API
 
 ### Buses (NOT YET IMPLEMENTED)
+
 - **Future API:** [redBus API](https://www.redbus.in/info/apidevelopers) (limited access) or [AbhiBus](https://www.abhibus.com/)
 - **Alternative:** Scrape from [Paytm Flights/Bus](https://paytm.com/bus-tickets) (RapidAPI wrappers exist)
 - **Data needed:** Source, destination, class (sleeper/semi-sleeper/AC), fare, departure/arrival time, operator name, bus number
@@ -174,9 +185,9 @@ Example: 2-night train + 3 usable days = 5 tabs
 ## 🐛 Known Bugs
 
 ### BUG 1: Overnight train/flight day count mismatch ✅
-**Root cause:** Itinerary tab count used `nightsUsed + 1` instead of `overnightCount + usableDays`.  
-Frontend also collapsed multi-night transit into one "Transit Day".  
-**Fix (completed):**
+
+**Root cause:** Itinerary tab count used `nightsUsed + 1` instead of `overnightCount + usableDays`.Frontend also collapsed multi-night transit into one "Transit Day".**Fix (completed):**
+
 - Backend `generateItinerary()`: `totalDays = overnightCount + usableDays`; one "In Transit" tab per overnight leg
 - `planTransportDetails` / `transportTimingDetails` pass both `overnightCount` and `usableDays`
 - `TripDetailsPage.buildItineraryDays()`: validates against `overnightCount + usableDays`; removed transit collapse
@@ -184,8 +195,9 @@ Frontend also collapsed multi-night transit into one "Transit Day".
 - **Status:** [x] FIXED
 
 ### BUG 2: White text in light mode ❌
-**Root cause:** PlanTripPage hardcodes `text-white` / `text-slate-*` on the glass panel while ThemeProvider locks light mode.  
-**Fix:** Added `.plan-trip-panel` light-mode CSS overrides in `theme.css` + class on PlanTripPage panel.  
+
+**Root cause:** PlanTripPage hardcodes `text-white` / `text-slate-*` on the glass panel while ThemeProvider locks light mode.**Fix:** Added `.plan-trip-panel` light-mode CSS overrides in `theme.css` + class on PlanTripPage panel.
+
 - **Status:** [x] FIXED
 
 ---
@@ -209,6 +221,7 @@ meals: { tier, dailyCostPerPerson, totalCost, breakdown: [{ day, breakfast, lunc
 ## 🤖 ML / AI (Discussion only — NO CODE yet)
 
 ### A. Price Forecasting Model
+
 - **What:** Predict best time to book transport/hotels using historical pricing patterns
 - **How it helps TripSmart:** Show users "Price is X% below average — book now" or "Wait 3 days for better price"
 - **Data needed:** Historical fare data over time for routes (IRCTC price history, Amadeus Historical Search)
@@ -216,6 +229,7 @@ meals: { tier, dailyCostPerPerson, totalCost, breakdown: [{ day, breakfast, lunc
 - **Integration point:** Show price trend badge on ResultsPage plans (↑ Rising / ↓ Falling / ✓ Good time to book)
 
 ### B. RAG-Based Trip Advisor
+
 - **What:** Retrieval-Augmented Generation — embed trip descriptions, reviews, and destination guides into vector DB
 - **How it helps:** When user searches "3 days in Goa with beach + nightlife", retrieve similar successful trips and generate contextual recommendations
 - **Our algorithm:** The DFS backtracker is **NOT** a RAG system — it's constraint satisfaction. They complement each other:
@@ -224,6 +238,7 @@ meals: { tier, dailyCostPerPerson, totalCost, breakdown: [{ day, breakfast, lunc
 - **Vector DB options:** Pinecone, ChromaDB, Weaviate
 
 ### C. RL Budget Allocation
+
 - **What:** After payment, recommend how to spend remaining budget (₹X left → suggest: ₹Y on local transport, ₹Z on restaurant upgrade, etc.)
 - **How it helps:** Upsell post-booking, increase satisfaction
 - **Model:** Multi-armed bandit or Q-learning — rewards based on user feedback/ratings
@@ -234,17 +249,20 @@ meals: { tier, dailyCostPerPerson, totalCost, breakdown: [{ day, breakfast, lunc
 ## 📋 TODO Checklist
 
 ### Immediate Bugs
-- [x] Fix overnight train/flight day count mismatch (overnightCount + usableDays tabs)
-- [x] Multi-day transit: one "In Transit" tab per overnight (no collapse)
-- [x] Fix white text in light mode (investigate glass-input scope)
+
+- [X] Fix overnight train/flight day count mismatch (overnightCount + usableDays tabs)
+- [X] Multi-day transit: one "In Transit" tab per overnight (no collapse)
+- [X] Fix white text in light mode (investigate glass-input scope)
 
 ### Schema & Data
-- [x] Add `overnightCount`, `usableDays`, `nightsAtDestination` to Trip breakdown schema
-- [x] Add structured `transport` sub-schema (instead of `Mixed`)
-- [x] Add structured `meals` sub-schema to Trip plans
+
+- [X] Add `overnightCount`, `usableDays`, `nightsAtDestination` to Trip breakdown schema
+- [X] Add structured `transport` sub-schema (instead of `Mixed`)
+- [X] Add structured `meals` sub-schema to Trip plans
 - [ ] Bus data source integration (TBD)
 
 ### Features
+
 - [ ] Payment: Integrate Razorpay (keys ready in .env.example)
 - [ ] Hotel Yes/No booking flow (binary decision in TripDetailsPage → BookingConfirmationPage)
 - [ ] "Book Transport" deeplink (IRCTC for trains, Amadeus redirect for flights)
@@ -252,6 +270,7 @@ meals: { tier, dailyCostPerPerson, totalCost, breakdown: [{ day, breakfast, lunc
 - [ ] Activities: Richer objects (price, rating, duration, booking link)
 
 ### Future / ML
+
 - [ ] Price forecasting model (discussion only)
 - [ ] RAG trip advisor (discussion only)
 - [ ] RL budget allocation post-payment (discussion only)
@@ -261,14 +280,14 @@ meals: { tier, dailyCostPerPerson, totalCost, breakdown: [{ day, breakfast, lunc
 
 ## 📁 Key File Locations
 
-| File | Purpose |
-|---|---|
-| [`trip-algorithm.service.js`](file:///d:/TripSmart/backend/src/services/trip-algorithm.service.js) | Core DFS backtracking algorithm |
-| [`trips.js`](file:///d:/TripSmart/backend/src/routes/trips.js) | Main API route + `generateItinerary()` — day model: `overnightCount + usableDays` |
-| [`Trip.js`](file:///d:/TripSmart/backend/src/models/Trip.js) | MongoDB schema for trips |
-| [`ResultsPage.tsx`](file:///d:/TripSmart/src/app/pages/ResultsPage.tsx) | Trip plan cards + comparison |
-| [`TripDetailsPage.tsx`](file:///d:/TripSmart/src/app/pages/TripDetailsPage.tsx) | Day-by-day itinerary tabs; validates `overnightCount + usableDays` |
-| [`BookingConfirmationPage.tsx`](file:///d:/TripSmart/src/app/pages/BookingConfirmationPage.tsx) | Payment + confirmation (mock) |
-| [`theme.css`](file:///d:/TripSmart/src/styles/theme.css) | CSS variables + light/dark mode |
-| [`types.ts`](file:///d:/TripSmart/types.ts) | Frontend TypeScript types |
-| [`trip.config.js`](file:///d:/TripSmart/backend/src/config/trip.config.js) | Cost constants and budget splits |
+| File                                                                                                | Purpose                                                                               |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [`trip-algorithm.service.js`](file:///d:/TripSmart/backend/src/services/trip-algorithm.service.js) | Core DFS backtracking algorithm                                                       |
+| [`trips.js`](file:///d:/TripSmart/backend/src/routes/trips.js)                                     | Main API route +`generateItinerary()` — day model: `overnightCount + usableDays` |
+| [`Trip.js`](file:///d:/TripSmart/backend/src/models/Trip.js)                                       | MongoDB schema for trips                                                              |
+| [`ResultsPage.tsx`](file:///d:/TripSmart/src/app/pages/ResultsPage.tsx)                            | Trip plan cards + comparison                                                          |
+| [`TripDetailsPage.tsx`](file:///d:/TripSmart/src/app/pages/TripDetailsPage.tsx)                    | Day-by-day itinerary tabs; validates`overnightCount + usableDays`                   |
+| [`BookingConfirmationPage.tsx`](file:///d:/TripSmart/src/app/pages/BookingConfirmationPage.tsx)    | Payment + confirmation (mock)                                                         |
+| [`theme.css`](file:///d:/TripSmart/src/styles/theme.css)                                           | CSS variables + light/dark mode                                                       |
+| [`types.ts`](file:///d:/TripSmart/types.ts)                                                        | Frontend TypeScript types                                                             |
+| [`trip.config.js`](file:///d:/TripSmart/backend/src/config/trip.config.js)                         | Cost constants and budget splits                                                      |

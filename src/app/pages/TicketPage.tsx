@@ -106,22 +106,22 @@ export default function TicketPage() {
   const Icon = isTrain ? Train : Plane;
 
   return (
-    <div className="min-h-screen bg-[#F7F4EF]">
+    <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container max-w-2xl mx-auto px-4 py-10 mt-16">
         <Button variant="ghost" className="mb-6 -ml-2" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
 
-        <p className="text-xs tracking-[0.18em] uppercase text-[#C85F3C] mb-2">Boarding pass</p>
+        <p className="text-xs tracking-[0.18em] uppercase text-emerald-400 mb-2">Boarding pass</p>
         <h1 className="font-serif text-3xl mb-1" style={{ fontFamily: 'var(--font-serif)' }}>{route}</h1>
         <p className="text-sm text-muted-foreground mb-6">
           Booking {ticket?.bookingId || '—'}
           {ticket?.usedFallback ? ' · Demo / fallback ticket' : ''}
         </p>
 
-        <Card className="overflow-hidden border-[#1A1814]/10 shadow-lg">
-          <div className="bg-[#1A1814] text-[#F7F4EF] p-6 flex justify-between items-start">
+        <Card className="overflow-hidden border-border shadow-lg">
+          <div className="bg-[#0B3D2E] text-[#D1F2EB] p-6 flex justify-between items-start">
             <div>
               <p className="text-xs uppercase tracking-widest opacity-70">{isTrain ? 'Train' : 'Flight'}</p>
               <p className="text-2xl font-serif mt-1" style={{ fontFamily: 'var(--font-serif)' }}>{t?.operator}</p>
@@ -157,7 +157,7 @@ export default function TicketPage() {
         </Card>
 
         {ticket?.hotel && (
-          <Card className="mt-4 border-[#1A1814]/10">
+          <Card className="mt-4 border-border">
             <CardContent className="p-6 flex gap-4">
               <Hotel className="h-6 w-6 text-primary mt-1" />
               <div className="flex-1">

@@ -99,7 +99,7 @@ export const cityCoordinates: Record<string, [number, number]> = {
 };
 
 export function getCoordinates(cityName: string): [number, number] | null {
-  if (!cityName) return null;
+  if (!cityName || typeof cityName !== 'string') return null;
   // Try exact match first
   if (cityCoordinates[cityName]) return cityCoordinates[cityName];
   // Try case-insensitive match
@@ -165,6 +165,34 @@ export function haversineKm(a: [number, number], b: [number, number]): number {
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return Math.round(2 * R * Math.asin(Math.sqrt(h)));
+}
+
+/** Spread named places around a city centre so they sit at city-level zoom. */
+export function scatterPlacesInCity(
+  cityName: string,
+  placeNames: string[] | unknown
+): { name: string; coords: [number, number] }[] {
+  const names = Array.isArray(placeNames)
+    ? placeNames.map((n) => (typeof n === 'string' ? n : String(n ?? ''))).filter(Boolean)
+    : [];
+  const center = typeof cityName === 'string' ? getCoordinates(cityName) : null;
+  if (!center || names.length === 0) return [];
+  const unique = Array.from(new Set(names));
+  const n = unique.length;
+  if (n === 0) return [];
+  return unique.map((name, i) => {
+    let hash = 0;
+    for (let c = 0; c < name.length; c++) hash = (hash * 31 + name.charCodeAt(c)) | 0;
+    const angle = (2 * Math.PI * i) / n - Math.PI / 2 + ((hash % 17) - 8) * 0.03;
+    const radiusDeg = 0.012 + (Math.abs(hash) % 12) * 0.0018;
+    return {
+      name,
+      coords: [
+        center[0] + Math.cos(angle) * radiusDeg,
+        center[1] + Math.sin(angle) * radiusDeg,
+      ] as [number, number],
+    };
+  });
 }
 
 /** Generate a quadratic Bézier arc between two points (for flight visualization) */

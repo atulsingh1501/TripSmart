@@ -19,7 +19,7 @@ export default function GroupTripInfoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F4EF] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation />
 
       <main className="flex-1">
@@ -31,13 +31,13 @@ export default function GroupTripInfoPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="inline-block px-4 py-1.5 rounded-full bg-[#C85F3C]/10 text-[#C85F3C] font-semibold text-sm mb-6 uppercase tracking-wider">
+              <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold text-sm mb-6 uppercase tracking-wider">
                 Coming Soon
               </div>
-              <h1 className="text-5xl md:text-6xl font-serif text-[#1A1814] mb-6 leading-tight">
+              <h1 className="text-5xl md:text-6xl font-serif text-foreground mb-6 leading-tight">
                 Travel is better together.
               </h1>
-              <p className="text-xl text-[#6B6560] mb-10 max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
                 TripSmart Group Trips connects you with like-minded travelers heading to the same destination. Share costs, make friends, and experience the world as a community.
               </p>
             </motion.div>
@@ -50,17 +50,17 @@ export default function GroupTripInfoPage() {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  icon: <Users className="h-8 w-8 text-[#C85F3C]" />,
+                  icon: <Users className="h-8 w-8 text-emerald-400" />,
                   title: 'Smart Matching',
                   desc: 'Our algorithm pairs you with travelers who have similar budgets, interests, and travel dates.',
                 },
                 {
-                  icon: <Compass className="h-8 w-8 text-[#C85F3C]" />,
+                  icon: <Compass className="h-8 w-8 text-emerald-400" />,
                   title: 'Agency Partnerships',
                   desc: 'We are partnering with top local agencies to curate exclusive group itineraries and bulk discounts.',
                 },
                 {
-                  icon: <MapPin className="h-8 w-8 text-[#C85F3C]" />,
+                  icon: <MapPin className="h-8 w-8 text-emerald-400" />,
                   title: 'Shared Experiences',
                   desc: 'Split the cost of private transport, villas, and premium activities without compromising comfort.',
                 },
@@ -72,7 +72,7 @@ export default function GroupTripInfoPage() {
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
                 >
-                  <Card className="h-full border-0 shadow-sm bg-[#F7F4EF]/50">
+                  <Card className="h-full border-0 shadow-sm bg-card/50">
                     <CardContent className="pt-8 px-6 pb-6">
                       <div className="mb-4 bg-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm">
                         {feature.icon}
@@ -88,7 +88,7 @@ export default function GroupTripInfoPage() {
         </section>
 
         {/* Waitlist Section */}
-        <section className="py-24 px-4 bg-[#1A1814] text-[#F7F4EF]">
+        <section className="py-24 px-4 bg-[#0B3D2E] text-[#D1F2EB]">
           <div className="container mx-auto max-w-3xl text-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -118,7 +118,7 @@ export default function GroupTripInfoPage() {
                   <Button
                     type="submit"
                     className="h-12 px-8 font-semibold"
-                    style={{ background: '#C85F3C', color: '#fff' }}
+                    style={{ background: '#50C878', color: '#013220' }}
                   >
                     Join Waitlist
                   </Button>

@@ -38,13 +38,13 @@ export default function AboutPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-muted/30 dark:bg-background pb-20">
+        <div className="min-h-screen bg-background pb-20 pt-16">
             <Navigation />
 
             <div className="container mx-auto px-4 py-12">
                 {/* Hero Section */}
                 <div className="text-center mb-16">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-cyan-600 bg-clip-text text-transparent">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
                         About TripSmart
                     </h1>
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -53,7 +53,7 @@ export default function AboutPage() {
                 </div>
 
                 {/* Mission */}
-                <Card className="mb-12 bg-gradient-to-r from-primary/5 to-cyan-500/5 border-primary/20">
+                <Card className="mb-12 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/20">
                     <CardContent className="py-8 text-center">
                         <Heart className="h-12 w-12 mx-auto text-primary mb-4" />
                         <h2 className="text-2xl font-bold mb-4">Our Mission</h2>
@@ -103,7 +103,7 @@ export default function AboutPage() {
                     <Button
                         size="lg"
                         onClick={() => navigate('/plan-trip')}
-                        className="bg-gradient-to-r from-primary to-cyan-600"
+                        className="bg-gradient-to-r from-emerald-500 to-teal-500 text-[#013220]"
                     >
                         Plan Your Trip
                         <ArrowRight className="ml-2 h-4 w-4" />

@@ -73,6 +73,10 @@ export interface MapBackgroundProps {
     trainPaths?:         [number, number][][];
     /** Force dark theme regardless of app theme */
     forceDark?: boolean;
+    /** Selected attractions / places to pin on the map */
+    places?: { name: string; coords: [number, number] }[];
+    /** Zoom to selected places at city scale instead of the long-haul route */
+    focusPlaces?: boolean;
 }
 
 export default function MapBackground({
@@ -83,6 +87,8 @@ export default function MapBackground({
     flightPaths = [],
     trainPaths  = [],
     forceDark = false,
+    places = [],
+    focusPlaces = false,
 }: MapBackgroundProps) {
     const containerRef   = useRef<HTMLDivElement>(null);
     const mapRef         = useRef<L.Map | null>(null);
@@ -136,10 +142,12 @@ export default function MapBackground({
 
         const originCoords      = origin      ? getCoordinates(origin)      : null;
         const destinationCoords = destination ? getCoordinates(destination) : null;
-        const stopCoords = stops
-            .map(s => getCoordinates(s))
+        const stopList = Array.isArray(stops) ? stops : [];
+        const stopCoords = stopList
+            .map(s => typeof s === 'string' ? getCoordinates(s) : null)
             .filter(Boolean) as [number, number][];
 
+        if (!focusPlaces) {
         if (originCoords) {
             allPositions.push(originCoords);
             layersRef.current.push(
@@ -173,9 +181,10 @@ export default function MapBackground({
                 }).addTo(map)
             );
         }
+        }
 
         // Direct distance dotted line & floating label
-        if (showDirectDistance && originCoords && destinationCoords) {
+        if (!focusPlaces && showDirectDistance && originCoords && destinationCoords) {
             const km = haversineKm(originCoords, destinationCoords);
             const midLat = (originCoords[0] + destinationCoords[0]) / 2;
             const midLng = (originCoords[1] + destinationCoords[1]) / 2;
@@ -196,14 +205,42 @@ export default function MapBackground({
             );
         }
 
+        const placeList = Array.isArray(places) ? places : [];
+        placeList.forEach((p, i) => {
+            if (!p?.coords || !Number.isFinite(p.coords[0]) || !Number.isFinite(p.coords[1])) return;
+            allPositions.push(p.coords);
+            const n = i + 1;
+            const svg = `<svg width="26" height="36" viewBox="0 0 32 44" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 28 16 28S32 28 32 16C32 7.163 24.837 0 16 0z" fill="#50C878"/>
+              <circle cx="16" cy="16" r="9" fill="#013220"/>
+              <text x="16" y="20" text-anchor="middle" font-size="10" font-weight="700" fill="#D1F2EB" font-family="system-ui">${n}</text>
+            </svg>`;
+            try {
+                layersRef.current.push(
+                    L.marker(p.coords, {
+                        icon: L.divIcon({ html: svg, className: '', iconSize: [26, 36], iconAnchor: [13, 36] }),
+                    }).bindPopup(String(p.name || '')).addTo(map)
+                );
+            } catch { /* ignore invalid marker */ }
+        });
+
         // Fly to fit all markers
-        if (allPositions.length === 1) {
+        if (focusPlaces && placeList.length > 0) {
+            try {
+                const valid = placeList.filter(p => p?.coords && Number.isFinite(p.coords[0]) && Number.isFinite(p.coords[1]));
+                if (valid.length === 1) {
+                    map.flyTo(valid[0].coords, 13, { duration: 1.2 });
+                } else if (valid.length > 1) {
+                    map.flyToBounds(L.latLngBounds(valid.map(p => p.coords)), { padding: [70, 70], maxZoom: 14, duration: 1.2 });
+                }
+            } catch { /* ignore fit bounds */ }
+        } else if (allPositions.length === 1) {
             map.flyTo(allPositions[0] as L.LatLngExpression, 7, { duration: 1.2 });
         } else if (allPositions.length > 1) {
             const bounds = L.latLngBounds(allPositions as L.LatLngExpression[]);
             map.flyToBounds(bounds, { padding: [80, 80], maxZoom: 9, duration: 1.2 });
         }
-    }, [origin, destination, stops, showDirectDistance]);
+    }, [origin, destination, stops, showDirectDistance, places, focusPlaces]);
 
     // ── Transport route overlays & zoom to them ────────────────────────────
     useEffect(() => {
@@ -217,7 +254,7 @@ export default function MapBackground({
 
         // Flight arcs – vibrant sky-blue curved lines
         flightPaths.forEach(path => {
-            if (path.length < 2) return;
+            if (!Array.isArray(path) || path.length < 2) return;
             path.forEach(pt => allRoutePts.push(pt as L.LatLngExpression));
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
@@ -231,7 +268,7 @@ export default function MapBackground({
 
         // Train routes – emerald green dashed lines (theme color)
         trainPaths.forEach(path => {
-            if (path.length < 2) return;
+            if (!Array.isArray(path) || path.length < 2) return;
             path.forEach(pt => allRoutePts.push(pt as L.LatLngExpression));
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
@@ -244,17 +281,17 @@ export default function MapBackground({
             );
         });
 
-        // Auto-zoom to the route if route paths are present
-        if (allRoutePts.length >= 2) {
+        // Auto-zoom to the route if route paths are present (skip when focusing city places)
+        if (!focusPlaces && allRoutePts.length >= 2) {
             const bounds = L.latLngBounds(allRoutePts);
             map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 9, duration: 1.0 });
         }
-    }, [flightPaths, trainPaths]);
+    }, [flightPaths, trainPaths, focusPlaces]);
 
     return (
         <div
             ref={containerRef}
-            className="absolute inset-0 z-0"
+            className="absolute inset-0 z-0 map-background"
             style={{ background: '#0d0e1a' }}
         />
     );

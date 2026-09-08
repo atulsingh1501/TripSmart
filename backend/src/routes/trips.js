@@ -12,7 +12,6 @@ const ScoringService = require('../services/scoring.service');
 const SmartSelectionService = require('../services/smart-selection.service');
 const TripAlgorithmService = require('../services/trip-algorithm.service');
 const BookingService = require('../services/booking.service');
-const RecommendationService = require('../services/recommendation.service');
 const {
   transformFlights,
   transformTrains,
@@ -25,6 +24,46 @@ const TRIP_CONFIG = require('../config/trip.config');
 const { authMiddleware, optionalAuthMiddleware } = require('./auth');
 const Trip = require('../models/Trip');
 const User = require('../models/User');
+
+// Recommendation ranking belongs to the FastAPI recommendation service.  Node
+// only owns authentication and the MongoDB queries needed to build its input.
+const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || 'http://localhost:8001').replace(/\/+$/, '');
+
+async function callRecommendationService(path, payload) {
+  const response = await fetch(`${ML_SERVICE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(4000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Recommendation service returned ${response.status}`);
+  }
+  return response.json();
+}
+
+async function attachPriceForecasts(tripPlan) {
+  const plans = tripPlan?.plans || [];
+  if (!plans.length) return tripPlan;
+  const forecasts = await Promise.all(plans.map(async (plan) => {
+    const transportCost = plan.costs?.transport || plan.transport?.cost || 0;
+    if (!transportCost) return null;
+    try {
+      return await callRecommendationService('/price-forecast', {
+        current_price: transportCost,
+        departure_date: tripPlan.startDate,
+        transport_mode: plan.transport?.mode || plan.transport?.type || 'flight',
+      });
+    } catch (error) {
+      // Forecasts are advisory; planning must still work if ML is offline.
+      console.warn(`Price forecast unavailable: ${error.message}`);
+      return null;
+    }
+  }));
+  tripPlan.plans = plans.map((plan, index) => ({ ...plan, priceForecast: forecasts[index] }));
+  return tripPlan;
+}
 
 // In-memory storage for trips (in production, use MongoDB)
 const trips = new Map();
@@ -1475,6 +1514,10 @@ router.post('/plan', optionalAuthMiddleware, async (req, res) => {
       preferences
     });
 
+    // The forecast is advisory and is attached per transport option for the
+    // result card's "book now / watch" guidance.
+    await attachPriceForecasts(tripPlan);
+
     // Save trip to MongoDB only if user is authenticated
     let mongoId = null;
     if (req.userId) {
@@ -1661,15 +1704,26 @@ router.post('/save', authMiddleware, async (req, res) => {
  */
 router.get('/recommendations', authMiddleware, async (req, res) => {
   try {
-    const recs = await RecommendationService.recommendForUser(req.userId, 6);
+    const [userTrips, candidateTrips] = await Promise.all([
+      Trip.find({ userId: req.userId }).lean(),
+      Trip.find({
+        userId: { $ne: req.userId },
+        'booking.status': { $in: ['confirmed', 'completed', 'saved'] },
+      }).limit(200).lean(),
+    ]);
+    const result = await callRecommendationService('/recommend', {
+      user_trips: userTrips,
+      candidate_trips: candidateTrips,
+      limit: 6,
+    });
     res.json({
       success: true,
-      model: 'supervised-hybrid-knn',
-      data: recs
+      model: result.model,
+      data: result.recommendations || [],
     });
   } catch (error) {
     console.error('Error generating recommendations:', error);
-    res.status(500).json({ success: false, error: 'Failed to load recommendations' });
+    res.status(503).json({ success: false, error: 'Recommendation service is unavailable' });
   }
 });
 
@@ -1960,12 +2014,11 @@ router.post('/recommendations', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Current plan is required for recommendations' });
     }
 
-    const { recommendAlternatives } = require('../services/recommendation.service');
-    const recommendations = recommendAlternatives(currentPlan);
+    const result = await callRecommendationService('/alternatives', { current_plan: currentPlan });
 
     res.json({
       success: true,
-      data: recommendations
+      data: result.recommendations || []
     });
   } catch (error) {
     console.error('Error fetching recommendations:', error);
@@ -1973,6 +2026,38 @@ router.post('/recommendations', async (req, res) => {
       success: false,
       error: 'Server error while generating recommendations'
     });
+  }
+});
+
+/** Price guidance for a selected transport option (no RAG). */
+router.post('/price-forecast', async (req, res) => {
+  try {
+    const result = await callRecommendationService('/price-forecast', req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error forecasting price:', error);
+    res.status(503).json({ success: false, error: 'Price forecasting service is unavailable' });
+  }
+});
+
+/** Post-booking discretionary budget allocation (constrained RL bandit). */
+router.post('/budget-allocation', authMiddleware, async (req, res) => {
+  try {
+    const result = await callRecommendationService('/budget-allocation', req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error allocating remaining budget:', error);
+    res.status(503).json({ success: false, error: 'Budget allocation service is unavailable' });
+  }
+});
+
+router.post('/budget-feedback', authMiddleware, async (req, res) => {
+  try {
+    const result = await callRecommendationService('/budget-feedback', req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error recording budget feedback:', error);
+    res.status(503).json({ success: false, error: 'Budget allocation service is unavailable' });
   }
 });
 

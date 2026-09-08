@@ -136,9 +136,9 @@ export default function ResultsPage() {
     if (!plan) return;
     toast.success('Opening itinerary workspace...');
     setTimeout(() => navigate(`/trip-details/${planId}`, {
-      state: { tripPlan: plan, formData, arrivalInfo: plan.arrivalInfo || arrivalInfo, adjustedNights, isReturnTrip }
+      state: { tripPlan: plan, formData, arrivalInfo: plan.arrivalInfo || arrivalInfo, adjustedNights, isReturnTrip, destinationAttractions: location.state?.destinationAttractions }
     }), 350);
-  }, [tripPlans, formData, arrivalInfo, adjustedNights, isReturnTrip, navigate]);
+  }, [tripPlans, formData, arrivalInfo, adjustedNights, isReturnTrip, navigate, location.state]);
 
   const toggleShortlist = useCallback((e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -241,7 +241,7 @@ export default function ResultsPage() {
               </div>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="h-8 w-[130px] rounded-full border-white/10 bg-white/5 text-xs font-medium text-white/70 focus:ring-0 focus:border-white/20 shrink-0">
-                  <ArrowUpDown className="mr-1.5 h-3 w-3 text-[#C85F3C]" />
+                  <ArrowUpDown className="mr-1.5 h-3 w-3 text-[#50C878]" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-white/10 bg-[#1a1b2e]">
@@ -351,6 +351,11 @@ export default function ResultsPage() {
                       <div>
                         <div style={{ fontSize: '0.65rem', color: 'rgba(209,242,235,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total</div>
                         <div style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.15rem', fontWeight: 700, color: '#D1F2EB' }}>{formatINR(plan.price)}</div>
+                        {plan.priceForecast && (
+                          <div style={{ marginTop: 3, maxWidth: 118, fontSize: '0.58rem', lineHeight: 1.25, color: plan.priceForecast.trend === 'rising' ? '#fca5a5' : plan.priceForecast.trend === 'falling' ? '#86efac' : 'rgba(209,242,235,0.55)' }}>
+                            {plan.priceForecast.trend === 'rising' ? 'Price rising — book soon' : plan.priceForecast.trend === 'falling' ? 'Price may fall — watch' : 'Price stable'}
+                          </div>
+                        )}
                       </div>
                       {isExpanded
                         ? <ChevronUp className="h-4 w-4" style={{ color: 'rgba(240,237,232,0.3)' }} />

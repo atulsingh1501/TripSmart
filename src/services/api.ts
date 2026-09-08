@@ -828,6 +828,25 @@ export interface TripPlanParams {
 }
 
 export const tripsAPI = {
+  getRecommendations: () =>
+    fetchAPI<{
+      success: boolean;
+      model: string;
+      data: Array<{
+        _id: string;
+        source: string;
+        destination: string;
+        startDate?: string;
+        endDate?: string;
+        travelers: number;
+        durationDays: string;
+        transportMode: string;
+        totalCost: number;
+        highlights: string[];
+        similarBecause: string;
+      }>;
+    }>('/trips/recommendations'),
+
   generatePlan: async (params: TripPlanParams): Promise<TripResponse> => {
     // Transform frontend params to backend format
     // IMPORTANT: Backend expects these fields at TOP LEVEL, not nested in preferences

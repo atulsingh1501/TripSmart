@@ -45,7 +45,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-muted/30 dark:bg-background pb-20">
+        <div className="min-h-screen bg-background pb-20 pt-16">
             <Navigation />
 
             <div className="container mx-auto px-4 py-8 max-w-2xl">

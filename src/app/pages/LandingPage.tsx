@@ -3,6 +3,8 @@ import Navigation from '../components/Navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { tripsAPI, formatINR } from '../../services/api';
 
 // Open-source Unsplash travel images (all free to use)
 const heroSlides = [
@@ -240,6 +242,19 @@ function HeroCarousel() {
 }
 
 export default function LandingPage() {
+  const { isAuthenticated } = useAuth();
+  const [recommendations, setRecommendations] = useState<Awaited<ReturnType<typeof tripsAPI.getRecommendations>>['data']>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setRecommendationsLoading(true);
+    tripsAPI.getRecommendations()
+      .then(response => setRecommendations(response.data))
+      .catch(() => setRecommendations([]))
+      .finally(() => setRecommendationsLoading(false));
+  }, [isAuthenticated]);
+
   return (
     <div style={{ background: '#F7F4EF', minHeight: '100vh', fontFamily: 'var(--font-outfit)' }}>
       {/* Floating nav */}
@@ -247,6 +262,38 @@ export default function LandingPage() {
 
       {/* Hero — full bleed carousel, no padding, no margin */}
       <HeroCarousel />
+
+      {isAuthenticated && (recommendationsLoading || recommendations.length > 0) && (
+        <section style={{ padding: 'clamp(3.5rem, 7vw, 6rem) clamp(1.5rem, 8vw, 8rem)', background: '#EFE9E0' }}>
+          <div style={{ maxWidth: 960, margin: '0 auto' }}>
+            <p className="text-xs font-semibold tracking-widest uppercase mb-3" style={{ color: '#C85F3C', letterSpacing: '0.16em' }}>
+              Curated for you
+            </p>
+            <div className="flex items-end justify-between gap-4 mb-8">
+              <h2 className="font-serif" style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.75rem, 4vw, 3rem)', fontWeight: 500, color: '#1A1814', lineHeight: 1.1 }}>
+                Journeys shaped by<br /><span style={{ fontStyle: 'italic' }}>your travel history</span>
+              </h2>
+              <Link to="/my-trips" className="hidden md:inline-flex text-sm font-medium" style={{ color: '#1A1814', borderBottom: '1px solid rgba(26, 24, 20, 0.3)', paddingBottom: 2 }}>
+                View your trips
+              </Link>
+            </div>
+            {!recommendationsLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {recommendations.map(recommendation => (
+                  <Link key={recommendation._id} to="/plan-trip" className="group" style={{ background: '#F7F4EF', padding: '1.25rem', border: '1px solid rgba(26, 24, 20, 0.08)' }}>
+                    <div className="flex items-start justify-between gap-3 mb-8">
+                      <p className="font-serif" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: '#1A1814' }}>{recommendation.destination}</p>
+                      <span className="text-xs uppercase tracking-wider" style={{ color: '#C85F3C' }}>{recommendation.transportMode}</span>
+                    </div>
+                    <p className="text-sm mb-2" style={{ color: '#6B6560' }}>{recommendation.similarBecause}</p>
+                    <p className="text-sm font-medium" style={{ color: '#1A1814' }}>{formatINR(recommendation.totalCost)} · {recommendation.durationDays} days</p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ── How it works ───────────────────────────────────── */}
       <section style={{ padding: 'clamp(5rem, 10vw, 9rem) clamp(1.5rem, 8vw, 8rem)' }}>

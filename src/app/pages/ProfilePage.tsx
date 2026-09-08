@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../components/ThemeProvider';
 import { formatINR } from '../../services/api';
+import Navigation from '../components/Navigation';
 
 interface UserTripHistoryItem {
   _id: string;
@@ -257,7 +258,8 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4 pt-20">
+      <Navigation />
       <div className="container max-w-4xl mx-auto">
         {/* Back Button */}
         <motion.div
@@ -294,23 +296,23 @@ const ProfilePage: React.FC = () => {
             <CardContent className="space-y-5">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-gray-500">Total Trips</p>
+                  <p className="text-xs text-muted-foreground">Total Trips</p>
                   <p className="text-xl font-semibold">{tripInsights.totalTrips}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-gray-500">Total Spend</p>
+                  <p className="text-xs text-muted-foreground">Total Spend</p>
                   <p className="text-xl font-semibold flex items-center gap-1"><IndianRupee className="h-4 w-4" />{formatINR(tripInsights.totalSpend).replace('₹', '')}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-gray-500">Average Spend</p>
+                  <p className="text-xs text-muted-foreground">Average Spend</p>
                   <p className="text-xl font-semibold">{formatINR(tripInsights.averageSpend)}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-gray-500">Favorite Destination</p>
+                  <p className="text-xs text-muted-foreground">Favorite Destination</p>
                   <p className="text-xl font-semibold truncate">{tripInsights.favoriteDestination}</p>
                 </div>
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-gray-500">Upcoming Trips</p>
+                  <p className="text-xs text-muted-foreground">Upcoming Trips</p>
                   <p className="text-xl font-semibold flex items-center gap-1"><TrendingUp className="h-4 w-4 text-primary" />{tripInsights.upcomingTrips}</p>
                 </div>
               </div>
@@ -329,14 +331,14 @@ const ProfilePage: React.FC = () => {
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   </div>
                 ) : tripHistory.length === 0 ? (
-                  <p className="text-sm text-gray-500">No trips yet. Start planning to unlock your travel insights.</p>
+                  <p className="text-sm text-muted-foreground">No trips yet. Start planning to unlock your travel insights.</p>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-auto pr-1">
                     {tripHistory.slice(0, 8).map((trip) => (
                       <div key={trip._id} className="rounded-lg border p-3 flex items-center justify-between gap-2">
                         <div>
                           <p className="font-medium text-sm">{trip.source} → {trip.destination}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {new Date(trip.startDate).toLocaleDateString()} to {new Date(trip.endDate).toLocaleDateString()} • {trip.travelers} traveler(s)
                           </p>
                         </div>
@@ -359,7 +361,7 @@ const ProfilePage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <Card className="bg-gradient-to-r from-primary/10 via-blue-500/10 to-teal-500/10 border-none">
+          <Card className="bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-400/10 border-none">
             <CardContent className="pt-6">
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800 shadow-lg">
@@ -370,10 +372,10 @@ const ProfilePage: React.FC = () => {
                 </Avatar>
 
                 <div className="text-center md:text-left flex-1">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h1 className="text-2xl font-bold text-foreground dark:text-white">
                     {user.name}
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
+                  <p className="text-muted-foreground dark:text-gray-400">{user.email}</p>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-2">
                     <Badge variant="secondary" className="gap-1">
                       <Calendar className="h-3 w-3" />
@@ -456,7 +458,7 @@ const ProfilePage: React.FC = () => {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="name" className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
+                          <User className="h-4 w-4 text-muted-foreground" />
                           Full Name
                         </Label>
                         <Input
@@ -471,7 +473,7 @@ const ProfilePage: React.FC = () => {
 
                       <div className="space-y-2">
                         <Label htmlFor="email" className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-500" />
+                          <Mail className="h-4 w-4 text-muted-foreground" />
                           Email Address
                         </Label>
                         <Input
@@ -481,14 +483,14 @@ const ProfilePage: React.FC = () => {
                           disabled
                           className="bg-gray-50 dark:bg-gray-800"
                         />
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           Email cannot be changed
                         </p>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="phone" className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-gray-500" />
+                          <Phone className="h-4 w-4 text-muted-foreground" />
                           Phone Number
                         </Label>
                         <Input
@@ -539,7 +541,7 @@ const ProfilePage: React.FC = () => {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="currentPassword" className="flex items-center gap-2">
-                          <Lock className="h-4 w-4 text-gray-500" />
+                          <Lock className="h-4 w-4 text-muted-foreground" />
                           Current Password
                         </Label>
                         <Input
@@ -556,7 +558,7 @@ const ProfilePage: React.FC = () => {
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="newPassword" className="flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-gray-500" />
+                            <Shield className="h-4 w-4 text-muted-foreground" />
                             New Password
                           </Label>
                           <Input
@@ -572,7 +574,7 @@ const ProfilePage: React.FC = () => {
 
                         <div className="space-y-2">
                           <Label htmlFor="confirmPassword" className="flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-gray-500" />
+                            <Shield className="h-4 w-4 text-muted-foreground" />
                             Confirm Password
                           </Label>
                           <Input
@@ -632,7 +634,7 @@ const ProfilePage: React.FC = () => {
                         )}
                         Dark Mode
                       </Label>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         Switch between light and dark themes
                       </p>
                     </div>
@@ -651,7 +653,7 @@ const ProfilePage: React.FC = () => {
                         <Bell className="h-4 w-4" />
                         Push Notifications
                       </Label>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         Receive notifications about your trips
                       </p>
                     </div>
@@ -672,7 +674,7 @@ const ProfilePage: React.FC = () => {
                         <Mail className="h-4 w-4" />
                         Email Updates
                       </Label>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         Receive deals and travel tips via email
                       </p>
                     </div>
@@ -693,7 +695,7 @@ const ProfilePage: React.FC = () => {
                         <CreditCard className="h-4 w-4" />
                         Currency
                       </Label>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground">
                         Set your preferred currency
                       </p>
                     </div>
@@ -748,7 +750,7 @@ const ProfilePage: React.FC = () => {
                   {tripHistory.slice(0, 3).map((trip) => (
                     <div key={trip._id} className="rounded-lg border p-4 space-y-2">
                       <p className="font-medium">{trip.source} → {trip.destination}</p>
-                      <p className="text-xs text-gray-500">{new Date(trip.startDate).toLocaleDateString()} • {trip.travelers} traveler(s)</p>
+                      <p className="text-xs text-muted-foreground">{new Date(trip.startDate).toLocaleDateString()} • {trip.travelers} traveler(s)</p>
                       <p className="text-sm text-primary font-semibold">{formatINR(trip.selectedPlan?.totalCost || 0)}</p>
                     </div>
                   ))}

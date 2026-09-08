@@ -201,13 +201,13 @@ export default function BookingConfirmationPage() {
           <div className="flex justify-center mb-8">
             <div
               className="h-24 w-24 rounded-full flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #C85F3C22 0%, #e07d5a11 100%)', border: '2px solid rgba(200,95,60,0.2)' }}
+              style={{ background: 'linear-gradient(135deg, #50C87822 0%, #0B6E4F33 100%)', border: '2px solid rgba(80,200,120,0.25)' }}
             >
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
               >
-                <Lock className="h-12 w-12" style={{ color: '#C85F3C' }} />
+                <Lock className="h-12 w-12" style={{ color: '#50C878' }} />
               </motion.div>
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function BookingConfirmationPage() {
                 {i < processingStep ? (
                   <CheckCircle className="h-5 w-5 flex-shrink-0" style={{ color: '#22c55e' }} />
                 ) : i === processingStep ? (
-                  <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin" style={{ color: '#C85F3C' }} />
+                  <Loader2 className="h-5 w-5 flex-shrink-0 animate-spin" style={{ color: '#50C878' }} />
                 ) : (
                   <div className="h-5 w-5 rounded-full border-2 border-muted flex-shrink-0" />
                 )}
@@ -243,7 +243,7 @@ export default function BookingConfirmationPage() {
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
             <motion.div
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #C85F3C, #e07d5a)' }}
+              style={{ background: 'linear-gradient(90deg, #50C878, #0B6E4F)' }}
               initial={{ width: '0%' }}
               animate={{ width: `${((processingStep + 1) / PROCESSING_STEPS.length) * 100}%` }}
               transition={{ duration: 0.5 }}
@@ -381,7 +381,7 @@ export default function BookingConfirmationPage() {
                   </Button>
                   <Button
                     className="flex-1"
-                    style={{ background: 'linear-gradient(135deg, #C85F3C 0%, #e07d5a 100%)', color: '#fff' }}
+                    style={{ background: 'linear-gradient(135deg, #50C878 0%, #0B6E4F 100%)', color: '#013220' }}
                     onClick={() => navigate('/my-trips')}
                   >
                     <Ticket className="mr-2 h-4 w-4" />
@@ -415,7 +415,7 @@ export default function BookingConfirmationPage() {
                 <div
                   className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{
-                    background: i === 0 ? '#C85F3C' : 'rgba(26,24,20,0.08)',
+                    background: i === 0 ? '#50C878' : 'rgba(80,200,120,0.12)',
                     color: i === 0 ? '#fff' : '#6B6560',
                   }}
                 >
@@ -665,7 +665,7 @@ export default function BookingConfirmationPage() {
                   <Button
                     onClick={handleConfirmBooking}
                     className="w-full font-semibold"
-                    style={{ background: 'linear-gradient(135deg, #C85F3C 0%, #e07d5a 100%)', color: '#fff', boxShadow: '0 4px 14px rgba(200,95,60,0.35)' }}
+                    style={{ background: 'linear-gradient(135deg, #50C878 0%, #0B6E4F 100%)', color: '#013220', boxShadow: '0 4px 14px rgba(80,200,120,0.35)' }}
                     size="lg"
                   >
                     Confirm & Pay
