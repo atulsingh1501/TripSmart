@@ -61,6 +61,8 @@ temp/
 test-results/
 playwright-report/
 
+ml-service/venv
+
 # Gemini artifacts (AI assistant)
 .gemini/
 

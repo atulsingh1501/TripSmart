@@ -58,7 +58,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import MapBackground from '../components/MapBackground';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+const COLORS = ['#50C878', '#0B6E4F', '#D1F2EB', '#34d399'];
 const TRIP_STORAGE_KEY = 'tripsmart_draft_trip';
 
 // Default form data for resetting
@@ -544,6 +544,10 @@ export default function PlanTripPage() {
       // Generate trip plans using backend API
       const tripResponse = await tripsAPI.generatePlan({
         ...formData,
+        selectedPlaces,
+        selectedPlaceNames: destinationAttractions
+          .filter(p => selectedPlaces.includes(p.id))
+          .map(p => p.name),
         departureDate: formData.departureDate,
         // For one-way trips, use departure date as return date (same day)
         returnDate: formData.isReturnTrip ? formData.returnDate : formData.departureDate,
@@ -582,7 +586,13 @@ export default function PlanTripPage() {
       localStorage.removeItem(TRIP_STORAGE_KEY);
       navigate('/results', {
         state: {
-          formData,
+          formData: {
+            ...formData,
+            selectedPlaces,
+            selectedPlaceNames: destinationAttractions
+              .filter(p => selectedPlaces.includes(p.id))
+              .map(p => p.name),
+          },
           tripPlans: tripResponse.plans,
           algorithmPlans: tripResponse.algorithmPlans,  // NEW: Algorithm-generated plans
           tripId: tripResponse.id,
@@ -638,25 +648,32 @@ export default function PlanTripPage() {
   return (
     <div className="map-page relative w-full h-dvh overflow-hidden">
       {/* ── Full-screen Map Background ── */}
-      <MapBackground
-        origin={formData.origin}
-        destination={formData.destination}
-        stops={formData.stops}
-        showDirectDistance={
-          inPreTransportRange &&
-          !!formData.origin && !!formData.destination
-        }
-        flightPaths={
-          atOrPastTransport && formData.transportation.includes('flights')
-            ? prefetchedFlightPaths
-            : []
-        }
-        trainPaths={
-          atOrPastTransport && formData.transportation.includes('trains')
-            ? prefetchedTrainPaths
-            : []
-        }
-      />
+      <div className="absolute inset-0 z-0">
+        <MapBackground
+          origin={formData.origin}
+          destination={formData.destination}
+          stops={formData.stops}
+          showDirectDistance={
+            inPreTransportRange &&
+            !!formData.origin && !!formData.destination
+          }
+          flightPaths={
+            atOrPastTransport && formData.transportation.includes('flights')
+              ? prefetchedFlightPaths
+              : []
+          }
+          trainPaths={
+            atOrPastTransport && formData.transportation.includes('trains')
+              ? prefetchedTrainPaths
+              : []
+          }
+        />
+        {/* Same evergreen fade as results — solid on the form side, map visible on the left */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to left, #013220 0%, rgba(1,50,32,0.97) 28%, rgba(11,110,79,0.55) 52%, rgba(80,200,120,0.08) 70%, transparent 85%)' }}
+        />
+      </div>
 
       {/* ── Navigation ── */}
       <div className="absolute top-0 left-0 right-0 z-30">
@@ -696,7 +713,7 @@ export default function PlanTripPage() {
           {/* Panel Header */}
           <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+              <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
                 <StepIcon className="h-4 w-4" />
               </div>
               <div>
@@ -709,7 +726,7 @@ export default function PlanTripPage() {
               {steps.map((_, i) => (
                 <button key={i} onClick={() => setCurrentStep(i)}
                   className={cn("rounded-full transition-all duration-300",
-                    i === currentStep ? "w-5 h-2 bg-blue-400" : i < currentStep ? "w-2 h-2 bg-blue-500/60" : "w-2 h-2 bg-white/20")}
+                    i === currentStep ? "w-5 h-2 bg-emerald-400" : i < currentStep ? "w-2 h-2 bg-emerald-500/60" : "w-2 h-2 bg-white/20")}
                 />
               ))}
             </div>
@@ -717,7 +734,7 @@ export default function PlanTripPage() {
 
           {/* Progress bar */}
           <div className="h-0.5 bg-white/10">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500" style={{ width: `${progress}%` }} />
           </div>
 
           {/* Trip summary tag */}
@@ -829,7 +846,7 @@ export default function PlanTripPage() {
 
                 <div className="space-y-3 pt-1 border-t border-white/10">
                   <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={cn("w-5 h-5 rounded border-2 flex items-center justify-center transition-colors", formData.multipleStops ? "bg-blue-500 border-blue-500" : "border-white/30 group-hover:border-white/50")}
+                    <div className={cn("w-5 h-5 rounded border-2 flex items-center justify-center transition-colors", formData.multipleStops ? "bg-emerald-500 border-emerald-500" : "border-white/30 group-hover:border-white/50")}
                       onClick={() => setFormData({ ...formData, multipleStops: !formData.multipleStops })}>
                       {formData.multipleStops && <Check className="h-3 w-3 text-white" />}
                     </div>
@@ -891,8 +908,8 @@ export default function PlanTripPage() {
                         <button key={val} type="button"
                           onClick={() => setFormData({ ...formData, isReturnTrip: val === 'return', returnDate: val === 'return' ? formData.returnDate : '' })}
                           className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
-                            selected ? "border-blue-500 bg-blue-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25")}>
-                          <Icon className={cn("h-5 w-5", selected ? "text-blue-400" : "text-slate-400")} />
+                            selected ? "border-emerald-500 bg-emerald-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25")}>
+                          <Icon className={cn("h-5 w-5", selected ? "text-emerald-400" : "text-slate-400")} />
                           <span className="font-semibold text-sm">{label}</span>
                           <span className="text-xs text-slate-400 text-center">{sub}</span>
                         </button>
@@ -913,8 +930,8 @@ export default function PlanTripPage() {
                         <button key={val} type="button"
                           onClick={() => setFormData({ ...formData, tripType: val, includeActivities: val === 'tour' ? true : formData.includeActivities })}
                           className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200",
-                            selected ? "border-cyan-500 bg-cyan-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25")}>
-                          <Icon className={cn("h-5 w-5", selected ? "text-cyan-400" : "text-slate-400")} />
+                            selected ? "border-emerald-500 bg-emerald-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25")}>
+                          <Icon className={cn("h-5 w-5", selected ? "text-emerald-400" : "text-slate-400")} />
                           <span className="font-semibold text-sm">{label}</span>
                           <span className="text-xs text-slate-400 text-center">{sub}</span>
                         </button>
@@ -957,7 +974,7 @@ export default function PlanTripPage() {
                 </div>
                 <input type="range" min={0} max={200000} step={1000} value={formData.budget}
                   onChange={(e) => setFormData({ ...formData, budget: parseInt(e.target.value) })}
-                  className="w-full accent-blue-500 cursor-pointer" />
+                  className="w-full accent-emerald-500 cursor-pointer" />
                 <div className="flex justify-between text-xs text-slate-500"><span>₹0</span><span>₹2,00,000+</span></div>
 
                 <div className="space-y-2">
@@ -966,7 +983,7 @@ export default function PlanTripPage() {
                     {['strict', 'moderate', 'flexible'].map(f => (
                       <button key={f} type="button" onClick={() => setFormData({ ...formData, budgetFlexibility: f })}
                         className={cn("flex-1 py-2 rounded-lg text-sm font-medium transition-all border",
-                          formData.budgetFlexibility === f ? "bg-blue-500 border-blue-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>
+                          formData.budgetFlexibility === f ? "bg-emerald-500 border-emerald-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>
                         {f.charAt(0).toUpperCase() + f.slice(1)}
                       </button>
                     ))}
@@ -992,20 +1009,20 @@ export default function PlanTripPage() {
                   <>
                     <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
                       <label className="flex items-center gap-2 cursor-pointer" onClick={toggleSelectAllPlaces}>
-                        <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center", selectedPlaces.length === destinationAttractions.length ? "bg-blue-500 border-blue-500" : "border-white/30")}>
+                        <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center", selectedPlaces.length === destinationAttractions.length ? "bg-emerald-500 border-emerald-500" : "border-white/30")}>
                           {selectedPlaces.length === destinationAttractions.length && <Check className="h-2.5 w-2.5 text-white" />}
                         </div>
                         <span className="font-medium text-sm text-white">Select all ({destinationAttractions.length})</span>
                       </label>
-                      <Badge className="bg-blue-500/20 text-blue-300 border-blue-400/30">{selectedPlaces.length} selected</Badge>
+                      <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30">{selectedPlaces.length} selected</Badge>
                     </div>
                     <div className="space-y-2">
                       {destinationAttractions.map((place) => (
                         <div key={place.id} onClick={() => togglePlaceSelection(place.id)}
                           className={cn("p-3 rounded-xl border-2 cursor-pointer transition-all",
-                            selectedPlaces.includes(place.id) ? "border-blue-500/60 bg-blue-500/10" : "border-white/8 bg-white/3 hover:border-white/20")}>
+                            selectedPlaces.includes(place.id) ? "border-emerald-500/60 bg-emerald-500/10" : "border-white/8 bg-white/3 hover:border-white/20")}>
                           <div className="flex items-center gap-3">
-                            <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center shrink-0", selectedPlaces.includes(place.id) ? "bg-blue-500 border-blue-500" : "border-white/30")}>
+                            <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center shrink-0", selectedPlaces.includes(place.id) ? "bg-emerald-500 border-emerald-500" : "border-white/30")}>
                               {selectedPlaces.includes(place.id) && <Check className="h-2.5 w-2.5 text-white" />}
                             </div>
                             <div className="flex-1">
@@ -1019,9 +1036,9 @@ export default function PlanTripPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-blue-500/10 border border-blue-400/20">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/20">
                       <span className="text-sm text-slate-300">Total entry fees:</span>
-                      <span className="font-bold text-blue-300">₹{destinationAttractions.filter(p => selectedPlaces.includes(p.id)).reduce((s, p) => s + (p.entryFee || 0), 0).toLocaleString('en-IN')}</span>
+                      <span className="font-bold text-emerald-300">₹{destinationAttractions.filter(p => selectedPlaces.includes(p.id)).reduce((s, p) => s + (p.entryFee || 0), 0).toLocaleString('en-IN')}</span>
                     </div>
                   </>
                 )}
@@ -1032,8 +1049,8 @@ export default function PlanTripPage() {
             {steps[currentStep].title === 'Accommodation' && (
               <div className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-400">
                 {!formData.isReturnTrip && (
-                  <div className="space-y-3 p-4 rounded-xl bg-blue-500/10 border border-blue-400/20">
-                    <p className="text-sm font-medium text-white flex items-center gap-2"><Hotel className="h-4 w-4 text-blue-400" /> How many nights?</p>
+                  <div className="space-y-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/20">
+                    <p className="text-sm font-medium text-white flex items-center gap-2"><Hotel className="h-4 w-4 text-emerald-400" /> How many nights?</p>
                     <p className="text-xs text-slate-400">Set to 0 if no accommodation needed.</p>
                     <div className="flex items-center gap-4">
                       <button type="button" onClick={() => setFormData({ ...formData, stayNights: Math.max(0, formData.stayNights - 1), noStay: formData.stayNights <= 1 })} className="h-9 w-9 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold">-</button>
@@ -1046,7 +1063,7 @@ export default function PlanTripPage() {
 
                 {formData.isReturnTrip && (
                   <label className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer">
-                    <div className={cn("w-5 h-5 rounded border-2 flex items-center justify-center shrink-0", formData.noStay ? "bg-blue-500 border-blue-500" : "border-white/30")}
+                    <div className={cn("w-5 h-5 rounded border-2 flex items-center justify-center shrink-0", formData.noStay ? "bg-emerald-500 border-emerald-500" : "border-white/30")}
                       onClick={() => setFormData({ ...formData, noStay: !formData.noStay, accommodations: !formData.noStay ? [] : ['hotels'] })}>
                       {formData.noStay && <Check className="h-3 w-3 text-white" />}
                     </div>
@@ -1070,8 +1087,8 @@ export default function PlanTripPage() {
                         return (
                           <button key={item.val} type="button"
                             onClick={() => setFormData({ ...formData, accommodations: active ? formData.accommodations.filter(a => a !== item.val) : [...formData.accommodations, item.val] })}
-                            className={cn("flex items-center gap-2 p-3 rounded-xl border-2 text-sm transition-all", active ? "border-blue-500 bg-blue-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25")}>
-                            <span className={active ? "text-blue-400" : "text-slate-400"}>{item.icon}</span>{item.label}
+                            className={cn("flex items-center gap-2 p-3 rounded-xl border-2 text-sm transition-all", active ? "border-emerald-500 bg-emerald-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25")}>
+                            <span className={active ? "text-emerald-400" : "text-slate-400"}>{item.icon}</span>{item.label}
                           </button>
                         );
                       })}
@@ -1090,7 +1107,7 @@ export default function PlanTripPage() {
                       <div className="flex gap-2">
                         {[{ val: 'standard', label: 'Private' }, { val: 'deluxe', label: 'Shared' }, { val: 'suite', label: 'Suite' }].map(r => (
                           <button key={r.val} type="button" onClick={() => setFormData({ ...formData, roomType: r.val })}
-                            className={cn("flex-1 py-2 rounded-lg text-sm border transition-all", formData.roomType === r.val ? "bg-blue-500 border-blue-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>{r.label}</button>
+                            className={cn("flex-1 py-2 rounded-lg text-sm border transition-all", formData.roomType === r.val ? "bg-emerald-500 border-emerald-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>{r.label}</button>
                         ))}
                       </div>
                     </div>
@@ -1112,10 +1129,10 @@ export default function PlanTripPage() {
                     return (
                       <button key={val} type="button"
                         onClick={() => setFormData({ ...formData, transportation: active ? formData.transportation.filter((t: string) => t !== val) : [...formData.transportation, val] })}
-                        className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all", active ? "border-blue-500 bg-blue-500/15" : "border-white/10 bg-white/5 hover:border-white/25")}>
-                        <Icon className={cn("h-5 w-5", active ? "text-blue-400" : "text-slate-400")} />
+                        className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all", active ? "border-emerald-500 bg-emerald-500/15" : "border-white/10 bg-white/5 hover:border-white/25")}>
+                        <Icon className={cn("h-5 w-5", active ? "text-emerald-400" : "text-slate-400")} />
                         <span className={cn("text-sm font-medium", active ? "text-white" : "text-slate-300")}>{label}</span>
-                        {active && <Check className="h-3 w-3 text-blue-400" />}
+                        {active && <Check className="h-3 w-3 text-emerald-400" />}
                       </button>
                     );
                   })}
@@ -1130,8 +1147,8 @@ export default function PlanTripPage() {
                         return (
                           <button key={c.val} type="button"
                             onClick={() => setFormData({ ...formData, flightClasses: active ? formData.flightClasses.filter((x: string) => x !== c.val) : [...formData.flightClasses, c.val] })}
-                            className={cn("py-2 px-3 rounded-lg text-xs border transition-all text-left flex items-center gap-2", active ? "border-blue-500 bg-blue-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>
-                            {active && <Check className="h-3 w-3 text-blue-400" />}{c.label}
+                            className={cn("py-2 px-3 rounded-lg text-xs border transition-all text-left flex items-center gap-2", active ? "border-emerald-500 bg-emerald-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>
+                            {active && <Check className="h-3 w-3 text-emerald-400" />}{c.label}
                           </button>
                         );
                       })}
@@ -1148,7 +1165,7 @@ export default function PlanTripPage() {
                         return (
                           <button key={c.val} type="button"
                             onClick={() => setFormData({ ...formData, trainClasses: active ? formData.trainClasses.filter((x: string) => x !== c.val) : [...formData.trainClasses, c.val] })}
-                            className={cn("py-2 px-2 rounded-lg text-xs border transition-all text-center", active ? "border-blue-500 bg-blue-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>{c.label}</button>
+                            className={cn("py-2 px-2 rounded-lg text-xs border transition-all text-center", active ? "border-emerald-500 bg-emerald-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>{c.label}</button>
                         );
                       })}
                     </div>
@@ -1160,13 +1177,13 @@ export default function PlanTripPage() {
                     <div className="grid grid-cols-2 gap-2">
                       {['ac', 'non-ac'].map(bt => (
                         <button key={bt} type="button" onClick={() => setFormData({ ...formData, busType: bt })}
-                          className={cn("py-2 rounded-lg text-sm border transition-all", formData.busType === bt ? "border-blue-500 bg-blue-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>{bt === 'ac' ? 'AC' : 'Non-AC'}</button>
+                          className={cn("py-2 rounded-lg text-sm border transition-all", formData.busType === bt ? "border-emerald-500 bg-emerald-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>{bt === 'ac' ? 'AC' : 'Non-AC'}</button>
                       ))}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {['rtc', 'private'].map(bo => (
                         <button key={bo} type="button" onClick={() => setFormData({ ...formData, busOperator: bo })}
-                          className={cn("py-2 rounded-lg text-sm border transition-all", formData.busOperator === bo ? "border-blue-500 bg-blue-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>{bo === 'rtc' ? 'RTC' : 'Private'}</button>
+                          className={cn("py-2 rounded-lg text-sm border transition-all", formData.busOperator === bo ? "border-emerald-500 bg-emerald-500/20 text-white" : "border-white/10 text-slate-400 hover:border-white/20")}>{bo === 'rtc' ? 'RTC' : 'Private'}</button>
                       ))}
                     </div>
                   </div>
@@ -1177,7 +1194,7 @@ export default function PlanTripPage() {
                   <div className="flex gap-2">
                     {[['0', 'Direct only'], ['1', 'Up to 1 stop'], ['2', 'Up to 2 stops']].map(([val, label]) => (
                       <button key={val} type="button" onClick={() => setFormData({ ...formData, maxTransfers: parseInt(val) })}
-                        className={cn("flex-1 py-2 rounded-lg text-xs border transition-all", formData.maxTransfers === parseInt(val) ? "bg-blue-500 border-blue-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>{label}</button>
+                        className={cn("flex-1 py-2 rounded-lg text-xs border transition-all", formData.maxTransfers === parseInt(val) ? "bg-emerald-500 border-emerald-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>{label}</button>
                     ))}
                   </div>
                 </div>
@@ -1218,11 +1235,11 @@ export default function PlanTripPage() {
                     return (
                       <button key={val} type="button"
                         onClick={() => setFormData({ ...formData, transportation: active ? formData.transportation.filter((t: string) => t !== val) : [...formData.transportation, val] })}
-                        className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all", active ? "border-cyan-500 bg-cyan-500/15" : "border-white/10 bg-white/5 hover:border-white/25")}>
-                        <div className={cn("p-2 rounded-full", active ? "bg-cyan-500/20 text-cyan-400" : "bg-white/10 text-slate-400")}><Icon className="h-4 w-4" /></div>
+                        className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all", active ? "border-emerald-500 bg-emerald-500/15" : "border-white/10 bg-white/5 hover:border-white/25")}>
+                        <div className={cn("p-2 rounded-full", active ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-slate-400")}><Icon className="h-4 w-4" /></div>
                         <span className={cn("text-sm font-medium", active ? "text-white" : "text-slate-300")}>{label}</span>
                         <span className="text-xs text-slate-500 text-center">{desc}</span>
-                        {active && <Check className="h-3 w-3 text-cyan-400" />}
+                        {active && <Check className="h-3 w-3 text-emerald-400" />}
                       </button>
                     );
                   })}
@@ -1249,8 +1266,8 @@ export default function PlanTripPage() {
                       const active = formData.priority === val;
                       return (
                         <button key={val} type="button" onClick={() => setFormData({ ...formData, priority: val })}
-                          className={cn("flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left", active ? "border-blue-500 bg-blue-500/15" : "border-white/10 bg-white/5 hover:border-white/25")}>
-                          <Icon className={cn("h-4 w-4 shrink-0", active ? "text-blue-400" : "text-slate-400")} />
+                          className={cn("flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left", active ? "border-emerald-500 bg-emerald-500/15" : "border-white/10 bg-white/5 hover:border-white/25")}>
+                          <Icon className={cn("h-4 w-4 shrink-0", active ? "text-emerald-400" : "text-slate-400")} />
                           <div>
                             <p className={cn("font-medium text-sm", active ? "text-white" : "text-slate-300")}>{label}</p>
                             <p className="text-xs text-slate-500">{desc}</p>
@@ -1265,7 +1282,7 @@ export default function PlanTripPage() {
                   <div className="flex gap-2">
                     {['relaxed', 'moderate', 'packed'].map(s => (
                       <button key={s} type="button" onClick={() => setFormData({ ...formData, travelStyle: s })}
-                        className={cn("flex-1 py-2 rounded-lg text-sm border transition-all", formData.travelStyle === s ? "bg-blue-500 border-blue-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>
+                        className={cn("flex-1 py-2 rounded-lg text-sm border transition-all", formData.travelStyle === s ? "bg-emerald-500 border-emerald-500 text-white" : "border-white/15 text-slate-300 hover:border-white/30")}>
                         {s.charAt(0).toUpperCase() + s.slice(1)}
                       </button>
                     ))}
@@ -1284,7 +1301,7 @@ export default function PlanTripPage() {
                     return (
                       <button key={label} type="button" onClick={() => toggleInterest(label)}
                         className={cn("flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border-2 transition-all font-medium",
-                          active ? "border-blue-400/50 bg-blue-500/20 text-blue-200" : "border-white/10 text-slate-400 hover:border-white/25")}>
+                          active ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-200" : "border-white/10 text-slate-400 hover:border-white/25")}>
                         {active && <Check className="h-3 w-3" />}{label}
                       </button>
                     );
@@ -1311,7 +1328,7 @@ export default function PlanTripPage() {
                       return (
                         <button key={tag} type="button"
                           onClick={() => setFormData({ ...formData, dietaryRestrictions: active ? formData.dietaryRestrictions.filter((d: string) => d !== tag) : [...formData.dietaryRestrictions, tag] })}
-                          className={cn("px-3 py-1 rounded-full text-xs border transition-all", active ? "bg-blue-500/20 border-blue-400/50 text-blue-300" : "border-white/10 text-slate-400 hover:border-white/25")}>{tag}</button>
+                          className={cn("px-3 py-1 rounded-full text-xs border transition-all", active ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-300" : "border-white/10 text-slate-400 hover:border-white/25")}>{tag}</button>
                       );
                     })}
                   </div>
@@ -1320,7 +1337,7 @@ export default function PlanTripPage() {
                   <p className="text-xs text-slate-400 uppercase tracking-wide font-medium">Accessibility</p>
                   {['Wheelchair Access', 'Elevator Required'].map(need => (
                     <label key={need} className="flex items-center gap-3 cursor-pointer">
-                      <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center", formData.accessibilityNeeds.includes(need) ? "bg-blue-500 border-blue-500" : "border-white/30")}
+                      <div className={cn("w-4 h-4 rounded border-2 flex items-center justify-center", formData.accessibilityNeeds.includes(need) ? "bg-emerald-500 border-emerald-500" : "border-white/30")}
                         onClick={() => setFormData({ ...formData, accessibilityNeeds: formData.accessibilityNeeds.includes(need) ? formData.accessibilityNeeds.filter((n: string) => n !== need) : [...formData.accessibilityNeeds, need] })}>
                         {formData.accessibilityNeeds.includes(need) && <Check className="h-2.5 w-2.5 text-white" />}
                       </div>
@@ -1349,12 +1366,12 @@ export default function PlanTripPage() {
               {currentStep < steps.length - 1 ? (
                 <button type="button"
                   onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-500/25">
+                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/25">
                   Next <ChevronRight className="h-4 w-4" />
                 </button>
               ) : (
                 <button type="button" onClick={handleSubmit} disabled={isSubmitting}
-                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 hover:brightness-110 text-white transition-all shadow-lg shadow-blue-500/30 disabled:opacity-70">
+                  className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-70">
                   {isSubmitting ? 'Finding options...' : (<><Zap className="h-4 w-4 fill-current" /> Generate Trip</>)}
                 </button>
               )}

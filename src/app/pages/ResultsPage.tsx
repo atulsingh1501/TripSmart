@@ -1,56 +1,66 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import Navigation from '../components/Navigation';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Separator } from '../components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Plane, Train, Hotel, Clock, Star, ArrowRight, Calendar, MapPin, ArrowUpDown, IndianRupee, Users, Activity, Info, Bookmark, Scale, Eye, Headphones, ShieldAlert } from 'lucide-react';
+import {
+  Plane, Train, Hotel, Star, ArrowRight, Calendar, MapPin,
+  IndianRupee, Users, Activity, Bookmark, Scale, ArrowUpDown, Info,
+  Clock, ChevronDown, ChevronUp
+} from 'lucide-react';
 import MapBackground from '../components/MapBackground';
 import { toast } from 'sonner';
 import { formatINR, type TripPlanData } from '../../services/api';
 import { arcPath, getCoordinates, getCoordinatesByIATA } from '../../data/cityCoordinates';
+import { getRailwayCorridors } from '../../data/railwayCorridors';
 
-function isIataLike(value?: string) {
-  return !!value && /^[A-Z]{3}$/.test(value.trim());
+/* ─────────────────────────────────────────────
+   Helpers
+───────────────────────────────────────────── */
+function isIataLike(v?: string) {
+  return !!v && /^[A-Z]{3}$/.test(v.trim());
 }
-
-function resolveCoordinates(value?: string, fallbackCity?: string): [number, number] | null {
-  if (isIataLike(value)) {
-    const byCode = getCoordinatesByIATA(value as string);
-    if (byCode) return byCode;
-  }
-  if (value) {
-    const byCity = getCoordinates(value);
-    if (byCity) return byCity;
-  }
-  if (fallbackCity) {
-    return getCoordinates(fallbackCity);
-  }
+function resolveCoords(v?: string, fb?: string): [number, number] | null {
+  if (isIataLike(v)) { const c = getCoordinatesByIATA(v!); if (c) return c; }
+  if (v) { const c = getCoordinates(v); if (c) return c; }
+  if (fb) return getCoordinates(fb);
   return null;
 }
 
-function getPlanRoutePreview(plan: TripPlanData, formData: any) {
+interface RoutePreview {
+  isTrain: boolean;
+  flightPaths: [number, number][][];
+  trainPaths:  [number, number][][];
+}
+
+function getPlanRoute(plan: TripPlanData, formData: any): RoutePreview {
   const outbound: any = plan.flight?.outbound || {};
-  const trainRoutePath = outbound.routePath as [number, number][] | undefined;
   const isTrain =
     plan.transport?.mode === 'train' ||
     plan.transport?.type === 'train' ||
     outbound?.mode === 'train' ||
     outbound?.type === 'train';
 
-  const from = resolveCoordinates(outbound.departure, formData?.origin);
-  const to = resolveCoordinates(outbound.arrival, formData?.destination);
+  const from = resolveCoords(outbound.departure, formData?.origin);
+  const to   = resolveCoords(outbound.arrival,   formData?.destination);
 
   const flightPaths: [number, number][][] = [];
-  const trainPaths: [number, number][][] = [];
+  const trainPaths:  [number, number][][] = [];
 
   if (isTrain) {
-    if (Array.isArray(trainRoutePath) && trainRoutePath.length > 1) {
-      trainPaths.push(trainRoutePath);
-    } else if (from && to) {
-      trainPaths.push([from, to]);
+    // 1️⃣ Try pre-computed railway corridors (most accurate, same as PlanTripPage)
+    const corridors = getRailwayCorridors(formData?.origin || '', formData?.destination || '');
+    if (corridors && corridors.length > 0) {
+      trainPaths.push(...corridors);
+    } else {
+      // 2️⃣ Fall back to backend routePath if available
+      const rp = outbound.routePath as [number, number][] | undefined;
+      if (rp && rp.length > 1) {
+        trainPaths.push(rp);
+      } else if (from && to) {
+        // 3️⃣ Last resort: straight line
+        trainPaths.push([from, to]);
+      }
     }
   } else if (from && to) {
     flightPaths.push(arcPath(from, to));
@@ -59,16 +69,31 @@ function getPlanRoutePreview(plan: TripPlanData, formData: any) {
   return { isTrain, flightPaths, trainPaths };
 }
 
-export default function ResultsPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [sortBy, setSortBy] = useState('recommended');
-  const [focusedPlanId, setFocusedPlanId] = useState<number | null>(null);
-  const [shortlistedPlanIds, setShortlistedPlanIds] = useState<number[]>([]);
-  const [comparePlanIds, setComparePlanIds] = useState<number[]>([]);
-  const [rightPanelMode, setRightPanelMode] = useState<'details' | 'compare' | null>(null);
+/* ─────────────────────────────────────────────
+   Accent colours per plan index
+───────────────────────────────────────────── */
+// Palette: Mint Whisper #D1F2EB | Emerald Green #50C878 | Royal Teal #0B6E4F | Dark Evergreen #013220
+const PLAN_ACCENTS = [
+  { border: '#50C878', glow: 'rgba(80,200,120,0.18)', badge: '#50C878' },
+  { border: '#D1F2EB', glow: 'rgba(209,242,235,0.12)', badge: '#D1F2EB' },
+  { border: '#0B6E4F', glow: 'rgba(11,110,79,0.20)', badge: '#50C878' },
+  { border: '#34d399', glow: 'rgba(52,211,153,0.12)', badge: '#34d399' },
+  { border: '#50C878', glow: 'rgba(80,200,120,0.14)', badge: '#50C878' },
+];
 
-  // Get trip plans from navigation state or use defaults
+/* ─────────────────────────────────────────────
+   Component
+───────────────────────────────────────────── */
+export default function ResultsPage() {
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const [sortBy, setSortBy] = useState('recommended');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [shortlistedIds, setShortlistedIds] = useState<number[]>([]);
+  const [compareIds, setCompareIds] = useState<number[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+
   const {
     formData,
     tripPlans: generatedPlans,
@@ -80,97 +105,98 @@ export default function ResultsPage() {
 
   const tripPlans: TripPlanData[] = generatedPlans || [];
 
-  // Sort plans based on selection
-  const sortedPlans = [...tripPlans].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      case 'rating':
-        return b.rating - a.rating;
-      default:
-        return 0;
+  const sortedPlans = useMemo(() => {
+    return [...tripPlans].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':  return a.price - b.price;
+        case 'price-high': return b.price - a.price;
+        case 'rating':     return b.rating - a.rating;
+        default: return 0;
+      }
+    });
+  }, [tripPlans, sortBy]);
+
+  // Auto-expand first plan
+  useEffect(() => {
+    if (sortedPlans.length > 0 && expandedId === null) {
+      setExpandedId(sortedPlans[0].id);
     }
-  });
+  }, [sortedPlans]);
 
-  const handleGenerateItinerary = (planId: number) => {
-    const selectedTripPlan = tripPlans.find(p => p.id === planId);
-    if (!selectedTripPlan) return;
+  const focusedPlan = useMemo(() =>
+    expandedId != null ? sortedPlans.find(p => p.id === expandedId) ?? null : null,
+  [expandedId, sortedPlans]);
+
+  const focusedRoute = useMemo(() =>
+    focusedPlan ? getPlanRoute(focusedPlan, formData) : null,
+  [focusedPlan, formData]);
+
+  const handleItinerary = useCallback((planId: number) => {
+    const plan = tripPlans.find(p => p.id === planId);
+    if (!plan) return;
     toast.success('Opening itinerary workspace...');
-    setTimeout(() => {
-      navigate(`/trip-details/${planId}`, {
-        state: {
-          tripPlan: selectedTripPlan,
-          formData,
-          arrivalInfo: selectedTripPlan.arrivalInfo || arrivalInfo,
-          adjustedNights,
-          isReturnTrip,
-        },
-      });
-    }, 350);
-  };
+    setTimeout(() => navigate(`/trip-details/${planId}`, {
+      state: { tripPlan: plan, formData, arrivalInfo: plan.arrivalInfo || arrivalInfo, adjustedNights, isReturnTrip, destinationAttractions: location.state?.destinationAttractions }
+    }), 350);
+  }, [tripPlans, formData, arrivalInfo, adjustedNights, isReturnTrip, navigate, location.state]);
 
-  const toggleShortlist = (planId: number) => {
-    setShortlistedPlanIds((current) => {
-      if (current.includes(planId)) {
-        toast.info('Removed from saved plans');
-        return current.filter((id) => id !== planId);
-      }
-      toast.success('Plan saved for later');
-      return [...current, planId];
+  const toggleShortlist = useCallback((e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setShortlistedIds(cur => cur.includes(id)
+      ? (toast.info('Removed from saved'), cur.filter(x => x !== id))
+      : (toast.success('Saved for later'), [...cur, id]));
+  }, []);
+
+  const toggleCompare = useCallback((e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setCompareIds(cur => {
+      if (cur.includes(id)) return cur.filter(x => x !== id);
+      if (cur.length >= 2) { toast.info('Max 2 plans can be compared'); return cur; }
+      setShowCompare(true);
+      return [...cur, id];
     });
-  };
+  }, []);
 
-  const toggleCompare = (planId: number) => {
-    setComparePlanIds((current) => {
-      if (current.includes(planId)) {
-        const next = current.filter((id) => id !== planId);
-        if (next.length === 0 && rightPanelMode === 'compare') {
-          setRightPanelMode(null);
-        }
-        return next;
-      }
-      if (current.length >= 2) {
-        toast.info('You can compare up to 2 plans at once');
-        return current;
-      }
-      setRightPanelMode('compare');
-      return [...current, planId];
-    });
-  };
+  // Recommendations
+  useEffect(() => {
+    if (tripPlans.length > 0) {
+      fetch('/api/trips/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPlan: sortedPlans[0] })
+      }).then(r => r.json()).then(d => {
+        if (d.success && d.data) setRecommendations(d.data);
+      }).catch(() => {});
+    }
+  }, []);
 
-  const focusedPlan = useMemo(() => {
-    if (focusedPlanId == null) return null;
-    return sortedPlans.find((plan) => plan.id === focusedPlanId) ?? null;
-  }, [focusedPlanId, sortedPlans]);
-
-  const mapPlan = focusedPlan ?? sortedPlans[0] ?? null;
-  const comparePlans = sortedPlans.filter((p) => comparePlanIds.includes(p.id));
-  const focusedRoute = mapPlan ? getPlanRoutePreview(mapPlan, formData) : null;
-
-  // If no plans available, show message
   if (!tripPlans || tripPlans.length === 0) {
     return (
-      <div className="min-h-screen bg-muted/30 pb-20">
+      <div className="min-h-screen flex flex-col" style={{ background: '#013220', color: '#D1F2EB' }}>
         <Navigation />
-        <main className="container mx-auto mt-8 px-4">
-          <div className="flex flex-col items-center justify-center py-20">
-            <h1 className="text-2xl font-bold mb-4">No Trip Plans Found</h1>
-            <p className="text-muted-foreground mb-6">Generate a new itinerary to see recommendations.</p>
-            <Button onClick={() => navigate('/plan-trip')}>
-              Build Itinerary <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </main>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 mt-20">
+          <h1 className="text-3xl font-serif font-bold mb-4" style={{ color: '#D1F2EB' }}>No Trip Plans Found</h1>
+          <p className="mb-8 text-center max-w-md" style={{ color: 'rgba(209,242,235,0.5)' }}>
+            Generate a new itinerary to see options tailored to your preferences.
+          </p>
+          <button
+            onClick={() => navigate('/plan-trip')}
+            className="flex items-center gap-2 px-8 py-3 rounded-full font-bold text-sm transition-all"
+            style={{ background: '#50C878', color: '#013220' }}
+          >
+            Build Itinerary <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen">
-      {focusedRoute && (
-        <div className="fixed inset-0 z-0 pointer-events-none">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#013220', color: '#D1F2EB', fontFamily: 'var(--font-sans, sans-serif)' }}>
+
+      {/* ── Map fills entire background ─────────────────── */}
+      <div className="absolute inset-0 z-0">
+        {focusedRoute && (
           <MapBackground
             origin={formData?.origin}
             destination={formData?.destination}
@@ -178,394 +204,420 @@ export default function ResultsPage() {
             showDirectDistance
             flightPaths={focusedRoute.flightPaths}
             trainPaths={focusedRoute.trainPaths}
+            forceDark={false}
           />
-        </div>
-      )}
-      <div className="fixed inset-0 z-10 bg-background/75 pointer-events-none" />
+        )}
+        {/* Evergreen-to-transparent overlay: content readable on left, map visible on right */}
+        <div 
+          className="absolute inset-0 pointer-events-none" 
+          style={{ background: 'linear-gradient(to right, #013220 0%, rgba(1,50,32,0.97) 30%, rgba(11,110,79,0.55) 55%, rgba(80,200,120,0.08) 72%, transparent 85%)' }} 
+        />
+      </div>
 
-      <div className="fixed top-0 left-0 right-0 z-30">
+      {/* ── Navigation ──────────────────────────────────── */}
+      <div className="relative z-50 flex-shrink-0">
         <Navigation />
       </div>
 
-      <main className="relative z-20 container mx-auto mt-20 px-4 pb-20">
-        {/* Header & Filters */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Your Trip Options Are Ready</h1>
-            <p className="text-muted-foreground">
-              Compare, save, and deep-dive into routes for {formData?.origin || 'Origin'} → {formData?.destination || 'Destination'}
-              {formData?.travelers && ` • ${formData.travelers} traveler${formData.travelers > 1 ? 's' : ''}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <ArrowUpDown className="mr-2 h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recommended">Best Match</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+      {/* ── Main content ────────────────────────────────── */}
+      <div className="relative z-10 flex flex-1 overflow-hidden mt-[60px]">
 
-        {/* Trip Summary */}
-        {tripPlans.length > 0 && (
-          <Card className="mb-6 bg-gradient-to-r from-primary/5 via-cyan-500/5 to-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-lg">
-                      {formData?.origin} → {formData?.destination}
-                    </span>
-                    <Badge variant="outline" className="ml-2">
-                      {isReturnTrip ? 'Round Trip' : 'One-way'}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {formData?.travelers || 1} traveler{(formData?.travelers || 1) > 1 ? 's' : ''}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {((adjustedNights ?? formData?.nights ?? 1) + 1)} day{((adjustedNights ?? formData?.nights ?? 1) + 1) !== 1 ? 's' : ''}
-                    </span>
-                    {arrivalInfo?.isNextDayArrival && (
-                      <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
-                        <Clock className="h-4 w-4" />
-                        Overnight travel
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Activity className="h-4 w-4" />
-                      {formData?.tripType === 'tour' ? 'Tour' : 'Direct'}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right border-l pl-4 md:border-l-0 md:pl-0">
-                  <p className="text-sm text-muted-foreground">Starting at</p>
-                  <p className="text-2xl font-bold text-primary flex items-center justify-end gap-1">
-                    <IndianRupee className="h-5 w-5" />
-                    {formatINR(Math.min(...tripPlans.map(p => p.price))).replace('₹', '')}
-                  </p>
-                  {Math.min(...tripPlans.map(p => p.price)) !== Math.max(...tripPlans.map(p => p.price)) && (
-                    <p className="text-xs text-muted-foreground">
-                      to {formatINR(Math.max(...tripPlans.map(p => p.price)))}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* ══════════════════════════════════════════════
+            LEFT COLUMN — 40%
+        ══════════════════════════════════════════════ */}
+        <div className="w-full md:w-[42%] xl:w-[38%] flex flex-col h-full overflow-hidden flex-shrink-0">
 
-        {/* Notice when activities are not included */}
-        {!includeActivities && (
-          <div className="mb-6 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex items-center gap-3">
-            <Info className="h-5 w-5 text-orange-600 dark:text-orange-400 shrink-0" />
-            <div>
-              <p className="font-medium text-orange-800 dark:text-orange-200">Activities not included</p>
-              <p className="text-sm text-orange-700 dark:text-orange-300">
-                You chose not to include sightseeing activities. Budget focuses on transport, accommodation, and meals only.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-6 lg:grid-cols-12">
-          <div className="space-y-4 lg:col-span-6">
-            {sortedPlans.map((plan) => {
-            const isShortlisted = shortlistedPlanIds.includes(plan.id);
-            const isCompared = comparePlanIds.includes(plan.id);
-            const badgeColors: Record<number, string> = {
-              1: "bg-green-500",
-              2: "bg-primary",
-              3: "bg-purple-500",
-            };
-            const borderColors: Record<number, string> = {
-              1: "border-green-500/30",
-              2: "border-primary/30",
-              3: "border-purple-500/30",
-            };
-
-            return (
-              <Card key={plan.id} className={`border-2 bg-background/92 backdrop-blur-md shadow-sm ${borderColors[plan.id] || 'border-primary/30'}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-xl">{plan.name}</CardTitle>
-                        <Badge className={`${badgeColors[plan.id] || 'bg-primary'} text-white`}>{plan.badge}</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span>{plan.rating.toFixed(1)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span>{plan.duration}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span>{formData?.travelers || 1} person(s)</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-primary">
-                        {formatINR(plan.price)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total for all</div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Quick Info */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      {plan.flight?.outbound && (() => {
-                        // Determine if this is a train or flight
-                        const isTrain = plan.transport?.mode === 'train' ||
-                          plan.flight?.outbound?.mode === 'train' ||
-                          plan.flight?.outbound?.type === 'train';
-                        const TransportIcon = isTrain ? Train : Plane;
-                        const transportName = plan.flight.outbound.name || plan.flight.outbound.airline || (isTrain ? 'Train' : 'Flight');
-
-                        // Format duration properly
-                        let durationStr = '';
-                        const dur = plan.flight.outbound.duration;
-                        if (typeof dur === 'object' && dur?.hours !== undefined) {
-                          durationStr = dur.minutes > 0 ? `${dur.hours}h ${dur.minutes}m` : `${dur.hours}h`;
-                        } else if (typeof dur === 'string') {
-                          durationStr = dur;
-                        }
-
-                        return (
-                          <div className="flex items-center gap-1">
-                            <TransportIcon className="h-4 w-4" />
-                            <span>
-                              {transportName}
-                              {durationStr && ` • ${durationStr}`}
-                              {plan.flight.outbound.stops !== undefined && (
-                                <> • {plan.flight.outbound.stops === 0 ? 'Direct' : `${plan.flight.outbound.stops} stop`}</>
-                              )}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                      {plan.hotel?.name && (
-                        <div className="flex items-center gap-1">
-                          <Hotel className="h-4 w-4" />
-                          <span>{plan.hotel.stars || 3}★ {(plan.hotel.name || 'Hotel').split(' ').slice(0, 2).join(' ')}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Activity className="h-4 w-4" />
-                        <span>{plan.activities?.list?.length || 0} activities</span>
-                      </div>
-                    </div>
-
-                    {/* Highlights */}
-                    <div className="flex flex-wrap gap-2">
-                      {(plan.highlights || []).slice(0, 4).map((highlight, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {highlight}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-
-                <div className="px-6 pb-6 grid gap-2 md:grid-cols-4">
-                  <Button variant={isShortlisted ? 'default' : 'outline'} size="sm" onClick={() => toggleShortlist(plan.id)}>
-                    <Bookmark className="mr-2 h-4 w-4" />
-                    {isShortlisted ? 'Saved' : 'Save'}
-                  </Button>
-                  <Button variant={isCompared ? 'default' : 'outline'} size="sm" onClick={() => toggleCompare(plan.id)}>
-                    <Scale className="mr-2 h-4 w-4" />
-                    {isCompared ? 'Comparing' : 'Compare'}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => { setFocusedPlanId(plan.id); setRightPanelMode('details'); }}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Details
-                  </Button>
-                  <Button onClick={() => handleGenerateItinerary(plan.id)} className="bg-gradient-to-r from-primary to-cyan-600 hover:brightness-110" size="sm">
-                    Generate Itinerary
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
-            );
-            })}
-          </div>
-
-          <div className="lg:col-span-6">
-            <div className="sticky top-24">
-              {rightPanelMode === 'details' && focusedPlan && (
-                <Card className="bg-background/95 backdrop-blur-md border-2 border-primary/25 shadow-lg shadow-primary/5">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{focusedPlan.name} Details</CardTitle>
-                      <Badge variant="outline">{focusedPlan.badge}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Click Compare to switch this panel to comparison view.</p>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    <div className="rounded-xl border bg-card/70 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <p className="text-sm font-semibold">Cost Breakdown</p>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Total</p>
-                          <p className="text-base font-bold text-primary">{formatINR(focusedPlan.price)}</p>
-                        </div>
-                      </div>
-                      <div className={`grid gap-3 ${includeActivities ? 'sm:grid-cols-2 xl:grid-cols-3' : 'sm:grid-cols-2'}`}>
-                        <div className="rounded-lg border border-blue-200/70 bg-blue-50/70 p-3 dark:border-blue-900/50 dark:bg-blue-950/30">
-                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Plane className="h-3.5 w-3.5" /> Transport</div>
-                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.transport || 0)}</div>
-                        </div>
-                        <div className="rounded-lg border border-green-200/70 bg-green-50/70 p-3 dark:border-green-900/50 dark:bg-green-950/30">
-                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Hotel className="h-3.5 w-3.5" /> Stay</div>
-                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.accommodation || 0)}</div>
-                        </div>
-                        {includeActivities && (
-                          <div className="rounded-lg border border-orange-200/70 bg-orange-50/70 p-3 dark:border-orange-900/50 dark:bg-orange-950/30">
-                            <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Activity className="h-3.5 w-3.5" /> Activities</div>
-                            <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.activities || 0)}</div>
-                          </div>
-                        )}
-                        <div className="rounded-lg border border-yellow-200/70 bg-yellow-50/70 p-3 dark:border-yellow-900/50 dark:bg-yellow-950/30">
-                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><IndianRupee className="h-3.5 w-3.5" /> Meals</div>
-                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.meals || 0)}</div>
-                        </div>
-                        <div className="rounded-lg border border-purple-200/70 bg-purple-50/70 p-3 dark:border-purple-900/50 dark:bg-purple-950/30">
-                          <div className="mb-1 flex items-center gap-2 text-xs text-muted-foreground"><Info className="h-3.5 w-3.5" /> Misc</div>
-                          <div className="text-sm font-semibold">{formatINR(focusedPlan.breakdown?.misc || 0)}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="rounded-xl border bg-card/70 p-4 space-y-3 text-sm">
-                      <p className="font-semibold">Detailed Transport Information</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <div className="rounded-lg bg-muted/40 p-3">
-                          <p className="text-xs text-muted-foreground mb-1">Operator</p>
-                          <p className="font-medium">{focusedPlan.flight?.outbound?.airline || focusedPlan.flight?.outbound?.name || 'Transport'}</p>
-                        </div>
-                        <div className="rounded-lg bg-muted/40 p-3">
-                          <p className="text-xs text-muted-foreground mb-1">Class</p>
-                          <p className="font-medium">{focusedPlan.flight?.outbound?.class || 'Standard'}</p>
-                        </div>
-                        <div className="rounded-lg bg-muted/40 p-3">
-                          <p className="text-xs text-muted-foreground mb-1">From</p>
-                          <p className="font-medium">{focusedPlan.flight?.outbound?.departure || formData?.origin} ({focusedPlan.flight?.outbound?.departureTime || 'TBD'})</p>
-                        </div>
-                        <div className="rounded-lg bg-muted/40 p-3">
-                          <p className="text-xs text-muted-foreground mb-1">To</p>
-                          <p className="font-medium">{focusedPlan.flight?.outbound?.arrival || formData?.destination} ({focusedPlan.flight?.outbound?.arrivalTime || 'TBD'})</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {rightPanelMode === 'compare' && (
-                <Card className="bg-background/95 backdrop-blur-md border-2 border-cyan-500/25 shadow-lg shadow-cyan-500/5">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg">Comparison</CardTitle>
-                    <p className="text-sm text-muted-foreground">Click View Details on any plan to replace this with detail view.</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {comparePlans.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Select plans using Compare to see comparison here.</p>
-                    ) : (
-                      comparePlans.map((plan) => (
-                        <div key={plan.id} className="rounded-xl border bg-card/70 p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-base font-semibold">{plan.name}</p>
-                            <Badge variant="outline">{plan.badge}</Badge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="rounded-lg bg-muted/40 p-3">
-                              <p className="text-xs text-muted-foreground mb-1">Total Price</p>
-                              <p className="text-sm font-semibold text-primary">{formatINR(plan.price)}</p>
-                            </div>
-                            <div className="rounded-lg bg-muted/40 p-3">
-                              <p className="text-xs text-muted-foreground mb-1">Rating</p>
-                              <p className="text-sm font-semibold">{plan.rating.toFixed(1)} / 5</p>
-                            </div>
-                            <div className="rounded-lg bg-muted/40 p-3">
-                              <p className="text-xs text-muted-foreground mb-1">Transport</p>
-                              <p className="text-sm font-medium">{formatINR(plan.breakdown.transport)}</p>
-                            </div>
-                            <div className="rounded-lg bg-muted/40 p-3">
-                              <p className="text-xs text-muted-foreground mb-1">Stay</p>
-                              <p className="text-sm font-medium">{formatINR(plan.breakdown.accommodation)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        </div>
-
-
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Booking Confirmation Section</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>You will receive instant confirmation with booking ID, payment receipt, and downloadable itinerary after finalizing any plan.</p>
-              <p>Cancellation: free up to 24 hours before departure in most cases.</p>
-            </CardContent>
-          </Card>
-          <Card className="border-orange-200 dark:border-orange-800">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                Emergency Contact And Support
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p className="text-muted-foreground">TripSmart Support: +91 1800-11-TRIP</p>
-              <p className="text-muted-foreground">Medical Emergency: +91 108</p>
-              <p className="text-muted-foreground">National Helpline: +91 112</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Budget Summary Card */}
-        <Card className="mt-8">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+          {/* Header bar */}
+          <div className="px-6 pt-6 pb-4 flex-shrink-0">
+            <div className="flex items-end justify-between gap-4 mb-3">
               <div>
-                <h3 className="font-semibold">Your Budget</h3>
-                <p className="text-sm text-muted-foreground">
-                  Budget target set to {formatINR(formData?.budget || 25000)} per person
+                <div className="flex items-center gap-2 mb-1" style={{ color: 'rgba(209,242,235,0.55)', fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  <MapPin className="h-3 w-3" />
+                  {formData?.origin} → {formData?.destination}
+                </div>
+                <h1 style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.8rem', fontWeight: 700, lineHeight: 1.1, color: '#D1F2EB', letterSpacing: '-0.01em' }}>
+                  {sortedPlans.length} Option{sortedPlans.length !== 1 ? 's' : ''} Found
+                </h1>
+              </div>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-8 w-[130px] rounded-full border-white/10 bg-white/5 text-xs font-medium text-white/70 focus:ring-0 focus:border-white/20 shrink-0">
+                  <ArrowUpDown className="mr-1.5 h-3 w-3 text-[#50C878]" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-white/10 bg-[#1a1b2e]">
+                  {[['recommended', 'Best Match'], ['price-low', 'Lowest Price'], ['price-high', 'Highest Price'], ['rating', 'Top Rated']].map(([v, l]) => (
+                    <SelectItem key={v} value={v} className="text-white/80 hover:text-white">{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Trip meta pills */}
+            <div className="flex flex-wrap gap-2" style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {[
+                { icon: <Users className="h-3 w-3" />, label: `${formData?.travelers || 1} Traveller${(formData?.travelers || 1) > 1 ? 's' : ''}` },
+                { icon: <Calendar className="h-3 w-3" />, label: `${((adjustedNights ?? formData?.nights ?? 1) + 1)} Days` },
+                { icon: <Activity className="h-3 w-3" />, label: formData?.tripType === 'tour' ? 'Tour' : 'Direct' },
+                { icon: <IndianRupee className="h-3 w-3" />, label: `Budget ${formatINR(formData?.budget || 0)}` },
+              ].map((p, i) => (
+                <span key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: 'rgba(11,110,79,0.25)', color: 'rgba(209,242,235,0.75)', border: '1px solid rgba(80,200,120,0.15)' }}>
+                  {p.icon} {p.label}
+                </span>
+              ))}
+            </div>
+
+            {!includeActivities && (
+              <div className="mt-3 flex items-start gap-2 p-3 rounded-xl" style={{ background: 'rgba(80,200,120,0.06)', border: '1px solid rgba(80,200,120,0.20)' }}>
+                <Info className="h-4 w-4 shrink-0 mt-0.5" style={{ color: '#50C878' }} />
+                <p style={{ fontSize: '0.75rem', color: 'rgba(209,242,235,0.7)', lineHeight: 1.5 }}>
+                  Activities excluded — budget covers transport, stay & meals only.
                 </p>
               </div>
-              <Button variant="outline" onClick={() => navigate('/plan-trip', { state: { formData } })}>
-                Edit Trip Inputs
-              </Button>
+            )}
+          </div>
+
+          {/* Scrollable plan list */}
+          <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+            {sortedPlans.map((plan, idx) => {
+              const accent = PLAN_ACCENTS[idx % PLAN_ACCENTS.length];
+              const isExpanded  = expandedId === plan.id;
+              const isSaved     = shortlistedIds.includes(plan.id);
+              const isCompared  = compareIds.includes(plan.id);
+              const isTrain     = plan.transport?.mode === 'train' || plan.flight?.outbound?.mode === 'train';
+              const TransIcon   = isTrain ? Train : Plane;
+              const transportName = plan.flight?.outbound?.name || plan.flight?.outbound?.airline || (isTrain ? 'Train' : 'Flight');
+              const dur = plan.flight?.outbound?.duration;
+              const durationStr = typeof dur === 'object' && (dur as any)?.hours !== undefined
+                ? ((dur as any).minutes > 0 ? `${(dur as any).hours}h ${(dur as any).minutes}m` : `${(dur as any).hours}h`)
+                : (typeof dur === 'string' ? dur : '');
+
+              return (
+                <motion.div
+                  key={plan.id}
+                  layout
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => {
+                    setExpandedId(isExpanded ? null : plan.id);
+                  }}
+                  className="cursor-pointer rounded-[18px] overflow-hidden transition-all duration-300"
+                  style={{
+                    background: isExpanded
+                      ? `linear-gradient(135deg, rgba(11,110,79,0.18) 0%, rgba(1,50,32,0.5) 100%)`
+                      : 'rgba(1,50,32,0.35)',
+                    border: `1px solid ${isExpanded ? accent.border : 'rgba(80,200,120,0.12)'}`,
+                    boxShadow: isExpanded ? `0 0 40px ${accent.glow}` : 'none',
+                  }}
+                >
+                  {/* ── Card Header (always visible) ─────── */}
+                  <div className="p-4 flex items-start gap-3">
+                    {/* Transport icon bubble */}
+                    <div className="flex flex-col items-center gap-1 shrink-0 mt-0.5">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: isExpanded ? accent.border : 'rgba(255,255,255,0.06)' }}>
+                        <TransIcon className="h-4 w-4" style={{ color: isExpanded ? '#fff' : 'rgba(240,237,232,0.5)' }} />
+                      </div>
+                    </div>
+
+                    {/* Main content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: accent.badge }}>
+                          {plan.tier}
+                        </span>
+                        {idx === 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider" style={{ background: '#50C878', color: '#013220' }}>
+                            Top Pick
+                          </span>
+                        )}
+                        {plan.badge && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" style={{ background: 'rgba(80,200,120,0.12)', color: 'rgba(209,242,235,0.6)' }}>
+                            {plan.badge}
+                          </span>
+                        )}
+                      </div>
+                      <h3 style={{ fontFamily: '"Playfair Display", serif', fontSize: '1rem', fontWeight: 700, color: '#D1F2EB', lineHeight: 1.2 }}>
+                        {plan.name}
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1" style={{ fontSize: '0.72rem', color: 'rgba(209,242,235,0.5)', fontWeight: 500 }}>
+                        <span className="flex items-center gap-1"><TransIcon className="h-3 w-3" />{transportName}</span>
+                        {durationStr && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{durationStr}</span>}
+                        {plan.hotel?.stars && <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />{plan.hotel.stars}★</span>}
+                      </div>
+                    </div>
+
+                    {/* Price + chevron */}
+                    <div className="text-right shrink-0 flex flex-col items-end gap-2">
+                      <div>
+                        <div style={{ fontSize: '0.65rem', color: 'rgba(209,242,235,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total</div>
+                        <div style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.15rem', fontWeight: 700, color: '#D1F2EB' }}>{formatINR(plan.price)}</div>
+                        {plan.priceForecast && (
+                          <div style={{ marginTop: 3, maxWidth: 118, fontSize: '0.58rem', lineHeight: 1.25, color: plan.priceForecast.trend === 'rising' ? '#fca5a5' : plan.priceForecast.trend === 'falling' ? '#86efac' : 'rgba(209,242,235,0.55)' }}>
+                            {plan.priceForecast.trend === 'rising' ? 'Price rising — book soon' : plan.priceForecast.trend === 'falling' ? 'Price may fall — watch' : 'Price stable'}
+                          </div>
+                        )}
+                      </div>
+                      {isExpanded
+                        ? <ChevronUp className="h-4 w-4" style={{ color: 'rgba(240,237,232,0.3)' }} />
+                        : <ChevronDown className="h-4 w-4" style={{ color: 'rgba(240,237,232,0.3)' }} />
+                      }
+                    </div>
+                  </div>
+
+                  {/* ── Expanded Details ─────────────────── */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.28 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4" style={{ borderTop: '1px solid rgba(80,200,120,0.12)' }}>
+                          {/* Cost breakdown mini-grid */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-4 mb-4">
+                            {[
+                              { label: 'Transport', value: plan.breakdown?.transport || 0, icon: <TransIcon className="h-3 w-3" /> },
+                              { label: 'Stay', value: plan.breakdown?.accommodation || 0, icon: <Hotel className="h-3 w-3" /> },
+                              { label: 'Activities', value: includeActivities ? (plan.breakdown?.activities || 0) : 0, icon: <Activity className="h-3 w-3" />, dim: !includeActivities },
+                              { label: 'Meals & Misc', value: (plan.breakdown?.meals || 0) + (plan.breakdown?.misc || 0), icon: <IndianRupee className="h-3 w-3" /> },
+                            ].map((item, i) => (
+                              <div key={i} className="rounded-xl p-3" style={{ background: 'rgba(11,110,79,0.15)', border: '1px solid rgba(80,200,120,0.12)', opacity: item.dim ? 0.4 : 1 }}>
+                                <div className="flex items-center gap-1 mb-1" style={{ color: 'rgba(209,242,235,0.5)', fontSize: '0.65rem', fontWeight: 600 }}>
+                                  {item.icon} {item.label}
+                                </div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#D1F2EB' }}>{item.dim ? '—' : formatINR(item.value)}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Journey info */}
+                          <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(11,110,79,0.10)', border: '1px solid rgba(80,200,120,0.12)' }}>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(209,242,235,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                                  {isTrain ? 'Train' : 'Flight'}
+                                </div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#D1F2EB' }}>{transportName}</div>
+                                <div style={{ fontSize: '0.72rem', color: 'rgba(209,242,235,0.45)', marginTop: 2 }}>
+                                  {plan.flight?.outbound?.class || 'Standard'} · {plan.flight?.outbound?.departureTime || '—'} → {plan.flight?.outbound?.arrivalTime || '—'}
+                                </div>
+                              </div>
+                              {plan.hotel && (
+                                <div className="flex-1 pl-4" style={{ borderLeft: '1px solid rgba(80,200,120,0.12)' }}>
+                                  <div style={{ fontSize: '0.65rem', color: 'rgba(209,242,235,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                                    Stay
+                                  </div>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#D1F2EB' }}>{plan.hotel.name}</div>
+                                  <div style={{ fontSize: '0.72rem', color: 'rgba(209,242,235,0.45)', marginTop: 2 }}>
+                                    {plan.hotel.stars}★ · {plan.hotel.roomType || 'Standard Room'}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => toggleShortlist(e, plan.id)}
+                              className="h-8 flex-1 flex items-center justify-center gap-1.5 rounded-lg transition-all text-xs font-bold"
+                              style={{
+                                background: isSaved ? '#D1F2EB' : 'rgba(11,110,79,0.20)',
+                                color: isSaved ? '#013220' : 'rgba(209,242,235,0.7)',
+                                border: '1px solid rgba(80,200,120,0.15)',
+                              }}
+                            >
+                              <Bookmark className={`h-3.5 w-3.5 ${isSaved ? 'fill-current' : ''}`} />
+                              {isSaved ? 'Saved' : 'Save'}
+                            </button>
+                            <button
+                              onClick={(e) => toggleCompare(e, plan.id)}
+                              className="h-8 flex-1 flex items-center justify-center gap-1.5 rounded-lg transition-all text-xs font-bold"
+                              style={{
+                                background: isCompared ? accent.border : 'rgba(11,110,79,0.20)',
+                                color: isCompared ? '#013220' : 'rgba(209,242,235,0.7)',
+                                border: '1px solid rgba(80,200,120,0.15)',
+                              }}
+                            >
+                              <Scale className="h-3.5 w-3.5" />
+                              {isCompared ? 'Comparing' : 'Compare'}
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleItinerary(plan.id); }}
+                              className="h-8 flex-[1.8] flex items-center justify-center gap-1.5 rounded-lg font-black text-xs transition-all"
+                              style={{ background: '#50C878', color: '#013220' }}
+                            >
+                              View Itinerary <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+
+            {/* ── Recommendations at bottom of list ─── */}
+            {recommendations.length > 0 && (
+              <div className="pt-4">
+                <h3 style={{ fontFamily: '"Playfair Display", serif', fontSize: '1rem', fontWeight: 700, color: '#D1F2EB', marginBottom: 12 }}>
+                  Similar Destinations
+                </h3>
+                <div className="space-y-3">
+                  {recommendations.map(rec => (
+                    <div
+                      key={rec.destination}
+                      className="rounded-2xl p-4 cursor-pointer group transition-all"
+                      style={{ background: 'rgba(11,110,79,0.10)', border: '1px solid rgba(80,200,120,0.12)' }}
+                      onClick={() => navigate('/plan-trip', { state: { formData: { ...formData, destination: rec.destination } } })}
+                    >
+                      <div className="flex justify-between items-start mb-1.5">
+                        <h4 style={{ fontFamily: '"Playfair Display", serif', fontWeight: 700, color: '#D1F2EB', fontSize: '0.9rem' }}>
+                          {rec.destination}
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(80,200,120,0.15)', color: '#50C878' }}>
+                          {rec.matchPercentage}% Match
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.72rem', color: 'rgba(209,242,235,0.5)', lineHeight: 1.5, marginBottom: 8 }} className="line-clamp-2">{rec.similarBecause}</p>
+                      <div className="flex justify-between items-center" style={{ fontSize: '0.68rem', color: 'rgba(209,242,235,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        <span>{rec.durationDays} Days · {formatINR(rec.totalCost)}</span>
+                        <ArrowRight className="h-3.5 w-3.5 group-hover:text-[#50C878] transition-colors" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════
+            RIGHT COLUMN — map fills the rest (visible through gradient)
+        ══════════════════════════════════════════════ */}
+        {/* The actual map is in the full background; the right side is just space */}
+        <div className="hidden md:flex flex-1 flex-col justify-end p-8 pb-10 pointer-events-none">
+          {/* Floating route badge */}
+          {focusedPlan && (
+            <motion.div
+              key={focusedPlan.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="ml-auto pointer-events-auto"
+              style={{ maxWidth: 260 }}
+            >
+              <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(1,50,32,0.85)', border: '1px solid rgba(80,200,120,0.18)', backdropFilter: 'blur(20px)' }}>
+                <div className="px-5 py-4">
+                  <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(209,242,235,0.45)', marginBottom: 4 }}>
+                    Currently Viewing
+                  </div>
+                  <div style={{ fontFamily: '"Playfair Display", serif', fontSize: '1rem', fontWeight: 700, color: '#D1F2EB', marginBottom: 2 }}>
+                    {focusedPlan.name}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'rgba(209,242,235,0.55)' }}>
+                    {focusedRoute?.isTrain
+                      ? '🚂 Train route shown on map'
+                      : '✈️ Flight arc shown on map'}
+                  </div>
+                </div>
+                <div className="px-5 py-3" style={{ borderTop: '1px solid rgba(80,200,120,0.10)' }}>
+                  <div className="flex justify-between" style={{ fontSize: '0.7rem', color: 'rgba(209,242,235,0.5)', fontWeight: 600 }}>
+                    <span>{formData?.origin}</span>
+                    <ArrowRight className="h-3 w-3" />
+                    <span>{formData?.destination}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Compare drawer (slides up from bottom) ── */}
+      <AnimatePresence>
+        {showCompare && compareIds.length > 0 && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl overflow-hidden"
+            style={{ background: 'rgba(1,50,32,0.97)', border: '1px solid rgba(80,200,120,0.15)', backdropFilter: 'blur(24px)', maxHeight: '70vh' }}
+          >
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.4rem', fontWeight: 700, color: '#D1F2EB' }}>Compare Plans</h2>
+                <button
+                  onClick={() => setShowCompare(false)}
+                  className="px-4 py-1.5 rounded-full text-xs font-bold"
+                  style={{ background: 'rgba(11,110,79,0.25)', color: 'rgba(209,242,235,0.7)' }}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {compareIds.map(id => {
+                  const plan = sortedPlans.find(p => p.id === id);
+                  const pidx = sortedPlans.findIndex(p => p.id === id);
+                  const accent = PLAN_ACCENTS[pidx % PLAN_ACCENTS.length];
+                  if (!plan) return null;
+                  return (
+                    <div key={id} className="rounded-2xl p-5" style={{ background: 'rgba(11,110,79,0.15)', border: `1px solid ${accent.border}` }}>
+                      <div style={{ fontSize: '0.65rem', color: accent.badge, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>{plan.tier}</div>
+                      <div style={{ fontFamily: '"Playfair Display", serif', fontSize: '1.2rem', fontWeight: 700, color: '#D1F2EB', marginBottom: 2 }}>{plan.name}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#D1F2EB', marginBottom: 16 }}>{formatINR(plan.price)}</div>
+                      {[
+                        ['Transport', plan.breakdown?.transport || 0],
+                        ['Stay', plan.breakdown?.accommodation || 0],
+                        ['Activities', plan.breakdown?.activities || 0],
+                        ['Meals & Misc', (plan.breakdown?.meals || 0) + (plan.breakdown?.misc || 0)],
+                      ].map(([label, val]) => (
+                        <div key={label as string} className="mb-3">
+                          <div className="flex justify-between mb-1" style={{ fontSize: '0.72rem', color: 'rgba(209,242,235,0.55)', fontWeight: 600 }}>
+                            <span>{label}</span>
+                            <span style={{ color: '#D1F2EB' }}>{formatINR(val as number)}</span>
+                          </div>
+                          <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <div className="h-full rounded-full" style={{ width: `${Math.min(100, ((val as number) / plan.price) * 100)}%`, background: accent.border }} />
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => handleItinerary(plan.id)}
+                        className="w-full mt-4 py-2.5 rounded-xl font-bold text-sm transition-all"
+                        style={{ background: accent.border, color: '#fff' }}
+                      >
+                        Select This Plan
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Compare trigger badge (shows when plans selected but drawer closed) */}
+      <AnimatePresence>
+        {!showCompare && compareIds.length > 0 && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={() => setShowCompare(true)}
+            className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full font-bold text-sm shadow-lg"
+            style={{ background: '#50C878', color: '#013220' }}
+          >
+            <Scale className="h-4 w-4" />
+            Compare {compareIds.length} Plan{compareIds.length > 1 ? 's' : ''}
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

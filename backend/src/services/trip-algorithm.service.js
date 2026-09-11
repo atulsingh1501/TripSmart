@@ -290,6 +290,8 @@ class TripAlgorithmService {
                 const sortedByCostAsc  = [...modePlans].sort((a, b) => a.totalCost - b.totalCost);
                 const sortedByCostDesc = [...modePlans].sort((a, b) => b.totalCost - a.totalCost);
                 const usedIds = new Set();
+                const BUDGET_BAND      = 1000;  // Best Value tight band: ±₹1,000 of user budget
+                const BUDGET_BAND_WIDE = 3000;  // Best Value wide band: ±₹3,000 (fallback)
 
                 // ── BUDGET: cheapest valid plan for this mode ──
                 const budgetPlan = sortedByCostAsc[0];
@@ -297,32 +299,53 @@ class TripAlgorithmService {
                 rankedPlans.push({ ...budgetPlan, category: `Budget ${modeLabel}` });
                 console.log(`   ✅ Budget ${modeLabel}: ${budgetPlan.selections.transport.name} + ${budgetPlan.selections.accommodation.name?.substring(0,25)} = ₹${budgetPlan.totalCost.toLocaleString()} (${Math.round(budgetPlan.budgetUtilization * 100)}%)`);
 
-                // ── BEST VALUE: plan closest to 90 % budget utilisation ──
-                const bestValuePlan = [...modePlans]
-                    .filter(p => !usedIds.has(p.id))
-                    .sort((a, b) => Math.abs(a.budgetUtilization - 0.90) - Math.abs(b.budgetUtilization - 0.90))[0];
+                // ── BEST VALUE (main): closest to user budget; prefer ±₹1k, fallback ±₹3k, else closest ──
+                const remainingForMain = modePlans.filter(p => !usedIds.has(p.id));
+                const inTightBand = remainingForMain.filter(p => Math.abs(p.totalCost - budget) <= BUDGET_BAND);
+                const inWideBand  = remainingForMain.filter(p => Math.abs(p.totalCost - budget) <= BUDGET_BAND_WIDE);
+                const bestValuePool = inTightBand.length > 0 ? inTightBand
+                    : inWideBand.length > 0 ? inWideBand
+                    : remainingForMain;
+                const bestValuePlan = bestValuePool
+                    .sort((a, b) => Math.abs(a.totalCost - budget) - Math.abs(b.totalCost - budget))[0];
 
                 if (bestValuePlan) {
                     usedIds.add(bestValuePlan.id);
                     rankedPlans.push({ ...bestValuePlan, category: `Best Value ${modeLabel}` });
-                    console.log(`   ✅ Best Value ${modeLabel}: ${bestValuePlan.selections.transport.name} + ${bestValuePlan.selections.accommodation.name?.substring(0,25)} = ₹${bestValuePlan.totalCost.toLocaleString()} (${Math.round(bestValuePlan.budgetUtilization * 100)}%)`);
+                    console.log(`   ✅ Best Value ${modeLabel}: ${bestValuePlan.selections.transport.name} + ${bestValuePlan.selections.accommodation.name?.substring(0,25)} = ₹${bestValuePlan.totalCost.toLocaleString()} (Δ ₹${Math.abs(bestValuePlan.totalCost - budget).toLocaleString()} from budget)`);
+                } else if (overBudgetFallback) {
+                    // ── GUARANTEE: at least 2 plans per mode ──
+                    // No second in-budget plan found → use cheapest over-budget as 2nd slot
+                    usedIds.add(overBudgetFallback.id || `over-${mode}`);
+                    rankedPlans.push({
+                        ...overBudgetFallback,
+                        isOverBudget: true,
+                        category: `Best Value ${modeLabel} (Slightly Over Budget)`
+                    });
+                    console.log(`   ⚠️  Guarantee 2nd ${modeLabel} slot: over-budget fallback ₹${overBudgetFallback.totalCost.toLocaleString()}`);
                 }
 
-                // ── PREMIUM: most expensive within budget (best hotel + transport) ──
-                // Falls back to cheapest over-budget option for this mode.
-                const premiumPlan = sortedByCostDesc.find(p => !usedIds.has(p.id));
+                // ── PREMIUM: should sit ABOVE the main plan / budget ──
+                // Prefer cheapest over-budget option when in-budget plans still underspend.
+                const mainCost = bestValuePlan?.totalCost ?? budgetPlan.totalCost;
+                const maxInBudget = sortedByCostDesc[0];
+                const wantsOverBudgetPremium = !maxInBudget || maxInBudget.totalCost < budget - BUDGET_BAND;
+                const overBudgetAlreadyUsed = !bestValuePlan && overBudgetFallback; // used it for 2nd slot above
 
-                if (premiumPlan) {
-                    usedIds.add(premiumPlan.id);
-                    rankedPlans.push({ ...premiumPlan, category: `Premium ${modeLabel}` });
-                    console.log(`   ✅ Premium ${modeLabel}: ${premiumPlan.selections.transport.name} + ${premiumPlan.selections.accommodation.name?.substring(0,25)} = ₹${premiumPlan.totalCost.toLocaleString()} (${Math.round(premiumPlan.budgetUtilization * 100)}%)`);
-                } else if (overBudgetFallback) {
+                if (!overBudgetAlreadyUsed && overBudgetFallback && (wantsOverBudgetPremium || overBudgetFallback.totalCost > mainCost)) {
                     rankedPlans.push({
                         ...overBudgetFallback,
                         isOverBudget: true,
                         category: `Premium ${modeLabel}`
                     });
-                    console.log(`   ⚠️  Premium ${modeLabel} (over budget): ₹${overBudgetFallback.totalCost.toLocaleString()} (₹${overBudgetFallback.overBudgetBy.toLocaleString()} over)`);
+                    console.log(`   ⚠️  Premium ${modeLabel} (higher / over budget): ₹${overBudgetFallback.totalCost.toLocaleString()} (₹${overBudgetFallback.overBudgetBy.toLocaleString()} over)`);
+                } else if (!overBudgetAlreadyUsed) {
+                    const premiumPlan = sortedByCostDesc.find(p => !usedIds.has(p.id) && p.totalCost > mainCost);
+                    if (premiumPlan) {
+                        usedIds.add(premiumPlan.id);
+                        rankedPlans.push({ ...premiumPlan, category: `Premium ${modeLabel}` });
+                        console.log(`   ✅ Premium ${modeLabel}: ${premiumPlan.selections.transport.name} + ${premiumPlan.selections.accommodation.name?.substring(0,25)} = ₹${premiumPlan.totalCost.toLocaleString()} (${Math.round(premiumPlan.budgetUtilization * 100)}%)`);
+                    }
                 }
             }
 
@@ -340,7 +363,7 @@ class TripAlgorithmService {
 
             // Sort by score to get quality options, not just cheapest
             const sortedByScore = [...overBudgetPlans].sort((a, b) => b.score - a.score);
-            rankedPlans = sortedByScore.slice(0, 3);
+            rankedPlans = sortedByScore.slice(0, 5);
 
             const gap = overBudgetPlans[0].totalCost - budget;
             warnings.push({
@@ -655,23 +678,23 @@ class TripAlgorithmService {
         const qualityScore = (transportScore + accommodationScore + mealScore + activityScore) * 0.4;
 
         // 2. Budget Utilization Score (60%): Reward plans close to budget
-        // Plans that use 90-100% of budget get highest score
-        // Plans using <70% get penalized (leaving money on table)
+        // Plans that use 85-100% of budget get highest score
+        // Plans using <65% get penalized (leaving money on table)
         let budgetScore = 0;
         if (totalCost <= budget) {
             const utilization = totalCost / budget;
-            if (utilization >= 0.90) {
-                // Excellent: Using 90-100% of budget
+            if (utilization >= 0.85) {
+                // Excellent: Using 85-100% of budget
                 budgetScore = 60;
-            } else if (utilization >= 0.80) {
-                // Good: Using 80-90% of budget
-                budgetScore = 50 + (utilization - 0.80) * 100; // 50-60
-            } else if (utilization >= 0.70) {
-                // Fair: Using 70-80% of budget
-                budgetScore = 40 + (utilization - 0.70) * 100; // 40-50
+            } else if (utilization >= 0.75) {
+                // Good: Using 75-85% of budget
+                budgetScore = 50 + (utilization - 0.75) * 100; // 50-60
+            } else if (utilization >= 0.65) {
+                // Fair: Using 65-75% of budget
+                budgetScore = 40 + (utilization - 0.65) * 100; // 40-50
             } else {
-                // Poor: Using <70% of budget (too cheap)
-                budgetScore = utilization * 57; // 0-40
+                // Poor: Using <65% of budget (too cheap)
+                budgetScore = utilization * 62; // 0-40
             }
         }
 

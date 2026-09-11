@@ -5,12 +5,14 @@ import AuthPage from './pages/AuthPage';
 import PlanTripPage from './pages/PlanTripPage';
 import ResultsPage from './pages/ResultsPage';
 import TripDetailsPage from './pages/TripDetailsPage';
-// import BookingConfirmationPage from './pages/BookingConfirmationPage'; // Payment page removed
+import BookingConfirmationPage from './pages/BookingConfirmationPage';
 import ProfilePage from './pages/ProfilePage';
 import MyTripsPage from './pages/MyTripsPage';
 import SavedTripDetailPage from './pages/SavedTripDetailPage';
+import TicketPage from './pages/TicketPage';
 import SettingsPage from './pages/SettingsPage';
 import AboutPage from './pages/AboutPage';
+import GroupTripInfoPage from './pages/GroupTripInfoPage';
 import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './components/ThemeProvider';
 
@@ -62,11 +64,14 @@ function AppRoutes() {
       <Route path="/plan-trip" element={<PlanTripPage />} />
       <Route path="/results" element={<ResultsPage />} />
       <Route path="/trip-details/:id" element={<TripDetailsPage />} />
-      {/* Payment page route removed - trips are now saved directly */}
-      {/* <Route path="/booking-confirmation" element={<BookingConfirmationPage />} /> */}
+      <Route path="/booking-confirmation" element={<ProtectedRoute><BookingConfirmationPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/my-trips" element={<ProtectedRoute><MyTripsPage /></ProtectedRoute>} />
-      <Route path="/my-trips/:id" element={<ProtectedRoute><SavedTripDetailPage /></ProtectedRoute>} />
+      <Route path="/saved-trips" element={<ProtectedRoute><MyTripsPage /></ProtectedRoute>} />
+      <Route path="/saved-trips/:id" element={<ProtectedRoute><SavedTripDetailPage /></ProtectedRoute>} />
+      <Route path="/tickets/:id" element={<ProtectedRoute><TicketPage /></ProtectedRoute>} />
+      <Route path="/group-trip" element={<GroupTripInfoPage />} />
+      <Route path="/my-trips" element={<Navigate to="/saved-trips" replace />} />
+      <Route path="/my-trips/:id" element={<Navigate to="/saved-trips" replace />} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/about" element={<AboutPage />} />
     </Routes>

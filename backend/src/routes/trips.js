@@ -11,6 +11,7 @@ const BudgetService = require('../services/budget.service');
 const ScoringService = require('../services/scoring.service');
 const SmartSelectionService = require('../services/smart-selection.service');
 const TripAlgorithmService = require('../services/trip-algorithm.service');
+const BookingService = require('../services/booking.service');
 const {
   transformFlights,
   transformTrains,
@@ -23,6 +24,46 @@ const TRIP_CONFIG = require('../config/trip.config');
 const { authMiddleware, optionalAuthMiddleware } = require('./auth');
 const Trip = require('../models/Trip');
 const User = require('../models/User');
+
+// Recommendation ranking belongs to the FastAPI recommendation service.  Node
+// only owns authentication and the MongoDB queries needed to build its input.
+const ML_SERVICE_URL = (process.env.ML_SERVICE_URL || 'http://localhost:8001').replace(/\/+$/, '');
+
+async function callRecommendationService(path, payload) {
+  const response = await fetch(`${ML_SERVICE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(4000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Recommendation service returned ${response.status}`);
+  }
+  return response.json();
+}
+
+async function attachPriceForecasts(tripPlan) {
+  const plans = tripPlan?.plans || [];
+  if (!plans.length) return tripPlan;
+  const forecasts = await Promise.all(plans.map(async (plan) => {
+    const transportCost = plan.costs?.transport || plan.transport?.cost || 0;
+    if (!transportCost) return null;
+    try {
+      return await callRecommendationService('/price-forecast', {
+        current_price: transportCost,
+        departure_date: tripPlan.startDate,
+        transport_mode: plan.transport?.mode || plan.transport?.type || 'flight',
+      });
+    } catch (error) {
+      // Forecasts are advisory; planning must still work if ML is offline.
+      console.warn(`Price forecast unavailable: ${error.message}`);
+      return null;
+    }
+  }));
+  tripPlan.plans = plans.map((plan, index) => ({ ...plan, priceForecast: forecasts[index] }));
+  return tripPlan;
+}
 
 // In-memory storage for trips (in production, use MongoDB)
 const trips = new Map();
@@ -448,7 +489,9 @@ const generateTripPlan = async (preferences) => {
     // overnightCount = how many nights are spent travelling (affects hotel & day count)
     const overnightCount = planArrivalInfo.nightsInTransit || 0;
     // usableDays = calendar days the user is actually at destination (for food/activity calc)
-    const usableDays = Math.max(1, durationDays - overnightCount);
+    const usableDays = isReturnTrip 
+      ? Math.max(1, durationDays - overnightCount)
+      : Math.max(1, (Number(nights) || 0) + 1);
 
     // Generate per-plan itinerary based on this plan's specific transport
     const durationStr = typeof planDuration === 'object' && planDuration.hours !== undefined
@@ -547,8 +590,8 @@ const generateTripPlan = async (preferences) => {
   if (algorithmResult.plans.length > 0) {
     // Map algorithm plans to tier names with category labels
     const tierNames = ['budget', 'comfort', 'premium', 'popular', 'alternative'];
-    // Generate MORE plans - take up to 10 best plans
-    algorithmPlans = algorithmResult.plans.slice(0, 10).map((plan, idx) => {
+    // Generate up to 5 plans (user requested 5 options)
+    algorithmPlans = algorithmResult.plans.slice(0, 5).map((plan, idx) => {
       const tierName = plan.category ? plan.category.toLowerCase().replace(/\s+/g, '-') : tierNames[idx] || 'comfort';
       return convertAlgorithmPlan(plan, tierName, idx);
     });
@@ -558,16 +601,19 @@ const generateTripPlan = async (preferences) => {
   // NEW: If no legacy plans generated, convert algorithm plans to legacy format
   if (plans.length === 0 && algorithmPlans.length > 0) {
     console.log('🔄 Converting algorithm plans to legacy format');
-    // Convert MORE plans for user choice - up to 5
+    // Convert up to 5 plans for user choice
+    const tierLabels = ['Budget', 'Comfort', 'Premium', 'Best Value', 'Alternative'];
     for (let i = 0; i < Math.min(5, algorithmPlans.length); i++) {
       const algoPlan = algorithmPlans[i];
-      const tierNames = ['Budget', 'Comfort', 'Premium'];
+      // Derive a readable tier label from category or fallback
+      const rawCategory = algoPlan.tier || '';
+      const tierLabel = tierLabels[i] || rawCategory || 'Option';
       // Safely get transport name as string
       const transportName = typeof algoPlan.transport?.name === 'string'
         ? algoPlan.transport.name
         : (algoPlan.transport?.name?.toString() || 'Transport');
       
-      console.log(`\n   Plan ${i + 1} (${tierNames[i]}):`);
+      console.log(`\n   Plan ${i + 1} (${tierLabel}):`);
       console.log(`      Transport: ${algoPlan.transport?.mode} - ${transportName} (₹${algoPlan.breakdown.transportTotal})`);
       console.log(`      Accommodation: ${algoPlan.accommodation?.name} ${algoPlan.accommodation?.stars}★ (₹${algoPlan.breakdown.accommodationTotal})`);
       console.log(`      Meals: ₹${algoPlan.breakdown.foodTotal}, Activities: ₹${algoPlan.breakdown.activityTotal}`);
@@ -575,9 +621,9 @@ const generateTripPlan = async (preferences) => {
       
       plans.push({
         id: uuidv4(),
-        tier: tierNames[i] || 'Comfort',
+        tier: tierLabel,
         description: algoPlan.name,
-        nights: algoPlan.nights,  // Per-plan adjusted nights
+        nights: algoPlan.nights,
         requestedNights: algoPlan.requestedNights,
         arrivalInfo: algoPlan.arrivalInfo,
         transport: algoPlan.transport,
@@ -1468,6 +1514,10 @@ router.post('/plan', optionalAuthMiddleware, async (req, res) => {
       preferences
     });
 
+    // The forecast is advisory and is attached per transport option for the
+    // result card's "book now / watch" guidance.
+    await attachPriceForecasts(tripPlan);
+
     // Save trip to MongoDB only if user is authenticated
     let mongoId = null;
     if (req.userId) {
@@ -1648,6 +1698,149 @@ router.post('/save', authMiddleware, async (req, res) => {
 });
 
 /**
+ * @route   GET /api/trips/recommendations
+ * @desc    Collaborative + content recommendations for the logged-in user
+ * @access  Private
+ */
+router.get('/recommendations', authMiddleware, async (req, res) => {
+  try {
+    const [userTrips, candidateTrips] = await Promise.all([
+      Trip.find({ userId: req.userId }).lean(),
+      Trip.find({
+        userId: { $ne: req.userId },
+        'booking.status': { $in: ['confirmed', 'completed', 'saved'] },
+      }).limit(200).lean(),
+    ]);
+    const result = await callRecommendationService('/recommend', {
+      user_trips: userTrips,
+      candidate_trips: candidateTrips,
+      limit: 6,
+    });
+    res.json({
+      success: true,
+      model: result.model,
+      data: result.recommendations || [],
+    });
+  } catch (error) {
+    console.error('Error generating recommendations:', error);
+    res.status(503).json({ success: false, error: 'Recommendation service is unavailable' });
+  }
+});
+
+/**
+ * @route   POST /api/trips/checkout
+ * @desc    After (mock) payment: book transport/hotel via live APIs or fallback mock tickets
+ * @access  Private
+ */
+router.post('/checkout', authMiddleware, async (req, res) => {
+  try {
+    const { plan, formData, contactInfo, paymentMethod } = req.body;
+    if (!plan) {
+      return res.status(400).json({ success: false, error: 'Plan data is required' });
+    }
+
+    const tickets = await BookingService.confirmBooking({
+      plan,
+      formData,
+      contactInfo,
+      paymentMethod
+    });
+
+    const sourceCode = formData?.origin || formData?.source || 'UNK';
+    const destCode = formData?.destination || 'UNK';
+    const sourceCity = getCityByCode(sourceCode);
+    const destCity = getCityByCode(destCode);
+
+    const trip = new Trip({
+      userId: req.userId,
+      source: {
+        code: sourceCity?.code || sourceCode,
+        name: sourceCity?.name || sourceCode,
+        state: sourceCity?.state || ''
+      },
+      destination: {
+        code: destCity?.code || destCode,
+        name: destCity?.name || destCode,
+        state: destCity?.state || ''
+      },
+      startDate: new Date(formData?.departureDate || new Date()),
+      endDate: new Date(formData?.returnDate || formData?.departureDate || new Date()),
+      nights: plan.hotel?.nights || 1,
+      travelers: formData?.travelers || 1,
+      tripType: formData?.tripType || 'tour',
+      noStay: formData?.noStay || false,
+      budget: {
+        amount: formData?.budget || plan.price || 0,
+        currency: 'INR',
+        flexibility: formData?.budgetFlexibility || 'moderate'
+      },
+      plans: [{
+        tier: plan.name || plan.tier || 'Comfort',
+        description: plan.badge || 'Booked Plan',
+        transport: plan.flight || {},
+        hotel: plan.hotel || {},
+        costs: {
+          transport: plan.breakdown?.transport || 0,
+          accommodation: plan.breakdown?.accommodation || 0,
+          activities: plan.breakdown?.activities || 0,
+          meals: plan.breakdown?.meals || 0,
+          miscellaneous: plan.breakdown?.misc || 0,
+          total: plan.price || 0
+        },
+        highlights: plan.highlights || [],
+        displayName: plan.name || plan.tier || 'Comfort',
+        badge: plan.badge || '',
+        rating: plan.rating || 0,
+        duration: plan.duration || '',
+        activities: plan.activities || {},
+        itinerary: plan.itinerary || []
+      }],
+      itinerary: (plan.itinerary || []).map(day => ({
+        day: day.day,
+        title: day.title || `Day ${day.day}`,
+        activities: day.activities || []
+      })),
+      booking: {
+        status: 'confirmed',
+        selectedPlan: plan.name || plan.tier || 'Comfort',
+        bookingId: tickets.bookingId,
+        paymentMethod: paymentMethod || 'card',
+        contactInfo: contactInfo || {},
+        totalAmount: plan.price || 0,
+        bookedAt: new Date(),
+        transportBooked: true,
+        hotelBooked: Boolean(tickets.hotel),
+        transportBookingRef: tickets.transport?.pnr,
+        hotelBookingRef: tickets.hotel?.confirmationNumber,
+        tickets
+      }
+    });
+
+    await trip.save();
+    await User.findByIdAndUpdate(req.userId, { $push: { savedTrips: trip._id } });
+
+    res.json({
+      success: true,
+      message: tickets.usedFallback
+        ? 'Booking confirmed (supplier APIs unavailable — mock tickets issued)'
+        : 'Booking confirmed',
+      data: {
+        tripId: trip._id.toString(),
+        bookingId: tickets.bookingId,
+        tickets,
+        destination: trip.destination.name
+      }
+    });
+  } catch (error) {
+    console.error('Error checking out trip:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Server error while booking trip'
+    });
+  }
+});
+
+/**
  * @route   GET /api/trips/:tripId
  * @desc    Get trip details by ID
  * @access  Public
@@ -1806,6 +1999,168 @@ router.get('/suggestions/popular', (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Server error while fetching popular trips'
+    });
+  }
+});
+
+// ============================================================
+// POST /api/trips/recommendations — Get alternative trips
+// ============================================================
+router.post('/recommendations', async (req, res) => {
+  try {
+    const { currentPlan } = req.body;
+    
+    if (!currentPlan) {
+      return res.status(400).json({ success: false, error: 'Current plan is required for recommendations' });
+    }
+
+    const result = await callRecommendationService('/alternatives', { current_plan: currentPlan });
+
+    res.json({
+      success: true,
+      data: result.recommendations || []
+    });
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while generating recommendations'
+    });
+  }
+});
+
+/** Price guidance for a selected transport option (no RAG). */
+router.post('/price-forecast', async (req, res) => {
+  try {
+    const result = await callRecommendationService('/price-forecast', req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error forecasting price:', error);
+    res.status(503).json({ success: false, error: 'Price forecasting service is unavailable' });
+  }
+});
+
+/** Post-booking discretionary budget allocation (constrained RL bandit). */
+router.post('/budget-allocation', authMiddleware, async (req, res) => {
+  try {
+    const result = await callRecommendationService('/budget-allocation', req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error allocating remaining budget:', error);
+    res.status(503).json({ success: false, error: 'Budget allocation service is unavailable' });
+  }
+});
+
+router.post('/budget-feedback', authMiddleware, async (req, res) => {
+  try {
+    const result = await callRecommendationService('/budget-feedback', req.body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error recording budget feedback:', error);
+    res.status(503).json({ success: false, error: 'Budget allocation service is unavailable' });
+  }
+});
+
+// ============================================================
+// POST /api/trips/book — Confirm a booking (fake/real payment)
+// ============================================================
+// Maps to real API when Razorpay is integrated:
+//   1. POST /api/trips/create-order  → Razorpay order creation
+//   2. Frontend: Razorpay checkout SDK → payment
+//   3. POST /api/trips/confirm-booking with razorpayPaymentId
+// Fallback: this endpoint handles the fake payment flow for now.
+router.post('/book', optionalAuthMiddleware, async (req, res) => {
+  try {
+    const { tripPlan, formData, paymentMethod, contactInfo, bookingRef } = req.body;
+
+    const confirmationNumber = bookingRef || `TS-${new Date().getFullYear()}-${uuidv4().substr(0, 6).toUpperCase()}`;
+
+    // Build a compact trip record to store
+    const tripRecord = {
+      userId: req.user?._id || null,
+      source: formData?.origin || tripPlan?.source || 'Unknown',
+      destination: formData?.destination || tripPlan?.destination || 'Unknown',
+      startDate: formData?.departureDate ? new Date(formData.departureDate) : new Date(),
+      endDate: formData?.returnDate ? new Date(formData.returnDate) : new Date(),
+      travelers: formData?.travelers || 1,
+      tripType: formData?.tripType || 'tour',
+
+      // Budget info
+      budget: { amount: tripPlan?.price || 0, currency: 'INR' },
+
+      // Selected plan snapshot
+      selectedPlan: {
+        tier: tripPlan?.tier || tripPlan?.name || 'Best Value',
+        totalCost: tripPlan?.price || 0,
+        transport: tripPlan?.transport || tripPlan?.flight?.outbound || {},
+        hotel: tripPlan?.hotel || {},
+        breakdown: tripPlan?.breakdown || {},
+      },
+
+      // Booking info
+      booking: {
+        status: 'confirmed',
+        bookingId: confirmationNumber,
+        paymentMethod: paymentMethod || 'card',
+        contactInfo: contactInfo || {},
+        totalAmount: tripPlan?.price || 0,
+        bookedAt: new Date(),
+        transportBooked: false,  // Will be true once IRCTC/airline deeplink booking confirmed
+        hotelBooked: false,       // Will be true once hotel API call confirmed
+      },
+
+      status: 'confirmed',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    let savedTrip = null;
+    try {
+      // Try to save to MongoDB
+      savedTrip = new Trip(tripRecord);
+      await savedTrip.save();
+
+      // Update user's savedTrips array if authenticated
+      if (req.user) {
+        await User.findByIdAndUpdate(req.user._id, {
+          $push: { savedTrips: savedTrip._id }
+        });
+      }
+    } catch (dbErr) {
+      // DB save failed — still return success (in-memory fallback)
+      console.warn('⚠️ Could not save booking to DB:', dbErr.message);
+    }
+
+    console.log(`✅ Booking confirmed: ${confirmationNumber} | Trip: ${tripRecord.source} → ${tripRecord.destination}`);
+
+    res.json({
+      success: true,
+      bookingId: confirmationNumber,
+      confirmationNumber,
+      status: 'confirmed',
+      message: 'Booking confirmed successfully',
+      trip: savedTrip ? {
+        _id: savedTrip._id,
+        source: savedTrip.source,
+        destination: savedTrip.destination,
+        startDate: savedTrip.startDate,
+        endDate: savedTrip.endDate,
+        status: savedTrip.status,
+      } : null,
+      // Real API integration note (for future):
+      // When Razorpay is live, this endpoint will also:
+      // - Call IRCTC deeplink / train booking API for transport
+      // - Call Booking.com / MakeMyTrip API for hotel
+      // - Store razorpayPaymentId and razorpayOrderId
+    });
+  } catch (error) {
+    console.error('Error confirming booking:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while confirming booking',
+      // Fallback: return a generated confirmation so frontend can proceed
+      bookingId: `TS-${new Date().getFullYear()}-FALLBK`,
+      confirmationNumber: `TS-${new Date().getFullYear()}-FALLBK`,
     });
   }
 });

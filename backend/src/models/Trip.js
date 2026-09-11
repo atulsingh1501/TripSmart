@@ -119,7 +119,7 @@ const tripSchema = new mongoose.Schema({
     order: Number
   }],
   plans: [{
-    tier: { type: String, enum: ['Budget', 'Comfort', 'Premium', 'Basic', 'Budget Saver', 'Best Value', 'Comfort Choice', 'Premium Choice', 'Premium Experience', 'Saved Plan'] },
+    tier: { type: String, enum: ['Budget', 'Comfort', 'Premium', 'Basic', 'Budget Saver', 'Best Value', 'Comfort Choice', 'Premium Choice', 'Premium Experience', 'Saved Plan', 'Alternative'] },
     description: String,
     transport: { type: mongoose.Schema.Types.Mixed, default: {} },
     transportDetails: transportSubSchema,
@@ -177,7 +177,8 @@ const tripSchema = new mongoose.Schema({
     transportBooked: { type: Boolean, default: false },
     hotelBooked: { type: Boolean, default: false },
     transportBookingRef: String,
-    hotelBookingRef: String
+    hotelBookingRef: String,
+    tickets: mongoose.Schema.Types.Mixed
   }
 }, {
   timestamps: true

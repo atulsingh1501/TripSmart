@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { getCoordinates, haversineKm } from '../../data/cityCoordinates';
-import { useTheme } from './ThemeProvider';
 
-// ── Tile-layer URLs ──────────────────────────────────────
+// ── Tile-layer URLs — Esri (no API key required, highly reliable) ──────────────
 const TILES = {
-    dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    standard: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}'
 };
+
+const ATTRIBUTION = 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012';
 
 // Fix Leaflet default icon paths broken by bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -41,14 +42,11 @@ const destinationIcon = createSvgIcon('#ef4444', 'B');
 const stopIcon        = (n: number) => createSvgIcon('#f59e0b', String(n));
 
 /** Floating distance label placed at the midpoint of the direct line */
-function createDistanceLabel(km: number, theme: 'light' | 'dark') {
-    const bg     = theme === 'dark' ? 'rgba(10,12,28,0.85)' : 'rgba(255,255,255,0.93)';
-    const color  = theme === 'dark' ? '#e2e8f0' : '#1e293b';
-    const border = theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+function createDistanceLabel(km: number) {
     const html = `<div style="
-        background:${bg};
-        border:1px solid ${border};
-        color:${color};
+        background:rgba(10,12,28,0.85);
+        border:1px solid rgba(255,255,255,0.15);
+        color:#e2e8f0;
         padding:3px 10px;
         border-radius:20px;
         font-size:11px;
@@ -73,6 +71,12 @@ export interface MapBackgroundProps {
     flightPaths?:        [number, number][][];
     /** Pre-computed straight paths for train routes ([lat,lng][]) */
     trainPaths?:         [number, number][][];
+    /** Force dark theme regardless of app theme */
+    forceDark?: boolean;
+    /** Selected attractions / places to pin on the map */
+    places?: { name: string; coords: [number, number] }[];
+    /** Zoom to selected places at city scale instead of the long-haul route */
+    focusPlaces?: boolean;
 }
 
 export default function MapBackground({
@@ -82,6 +86,9 @@ export default function MapBackground({
     showDirectDistance = false,
     flightPaths = [],
     trainPaths  = [],
+    forceDark = false,
+    places = [],
+    focusPlaces = false,
 }: MapBackgroundProps) {
     const containerRef   = useRef<HTMLDivElement>(null);
     const mapRef         = useRef<L.Map | null>(null);
@@ -89,7 +96,8 @@ export default function MapBackground({
     const layersRef      = useRef<L.Layer[]>([]);
     const routeLayersRef = useRef<L.Layer[]>([]);
 
-    const { theme } = useTheme();
+    // Always use standard tiles
+    const tileUrl = TILES.standard;
 
     // ── Initialise map once ─────────────────────────────────────────────────
     useEffect(() => {
@@ -99,20 +107,20 @@ export default function MapBackground({
             center: [22.5, 80.0],
             zoom: 5,
             zoomControl: false,
-            attributionControl: false,
+            attributionControl: true,
         });
 
-        // Custom pane that sits above the tile layer (200) and overlay pane (400)
-        // Using inline style so it works even if Leaflet's CSS fails to load
+        // Custom pane for routes
         mapRef.current.createPane('routePane');
         const routePaneEl = mapRef.current.getPane('routePane')!;
         routePaneEl.style.zIndex = '450';
         routePaneEl.style.pointerEvents = 'none';
 
-        tileRef.current = L.tileLayer(
-            theme === 'dark' ? TILES.dark : TILES.light,
-            { subdomains: 'abcd', maxZoom: 19 }
-        ).addTo(mapRef.current);
+        tileRef.current = L.tileLayer(tileUrl, {
+            subdomains: 'abcd',
+            maxZoom: 19,
+            attribution: ATTRIBUTION
+        }).addTo(mapRef.current);
 
         return () => {
             mapRef.current?.remove();
@@ -122,18 +130,7 @@ export default function MapBackground({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── Swap tile layer when theme changes ─────────────────────────────────
-    useEffect(() => {
-        const map = mapRef.current;
-        if (!map) return;
-        if (tileRef.current) map.removeLayer(tileRef.current);
-        tileRef.current = L.tileLayer(
-            theme === 'dark' ? TILES.dark : TILES.light,
-            { subdomains: 'abcd', maxZoom: 19 }
-        ).addTo(map);
-    }, [theme]);
-
-    // ── Update markers, direct distance line & main route polyline ──────────
+    // ── Update markers and zoom to route ──────────────────────────────────
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
@@ -145,10 +142,12 @@ export default function MapBackground({
 
         const originCoords      = origin      ? getCoordinates(origin)      : null;
         const destinationCoords = destination ? getCoordinates(destination) : null;
-        const stopCoords = stops
-            .map(s => getCoordinates(s))
+        const stopList = Array.isArray(stops) ? stops : [];
+        const stopCoords = stopList
+            .map(s => typeof s === 'string' ? getCoordinates(s) : null)
             .filter(Boolean) as [number, number][];
 
+        if (!focusPlaces) {
         if (originCoords) {
             allPositions.push(originCoords);
             layersRef.current.push(
@@ -170,8 +169,8 @@ export default function MapBackground({
             );
         }
 
-        // Main route polyline (through stops)
-        if (allPositions.length >= 2) {
+        // Main route polyline (through stops only if no specific route paths)
+        if (allPositions.length >= 2 && flightPaths.length === 0 && trainPaths.length === 0) {
             layersRef.current.push(
                 L.polyline(allPositions, {
                     color: '#3b82f6',
@@ -182,39 +181,68 @@ export default function MapBackground({
                 }).addTo(map)
             );
         }
+        }
 
-        // ── Direct distance dotted line & floating label ───────────────────
-        if (showDirectDistance && originCoords && destinationCoords) {
+        // Direct distance dotted line & floating label
+        if (!focusPlaces && showDirectDistance && originCoords && destinationCoords) {
             const km = haversineKm(originCoords, destinationCoords);
             const midLat = (originCoords[0] + destinationCoords[0]) / 2;
             const midLng = (originCoords[1] + destinationCoords[1]) / 2;
 
             layersRef.current.push(
                 L.polyline([originCoords, destinationCoords], {
-                    color: '#94a3b8',
+                    color: 'rgba(255,255,255,0.2)',
                     weight: 1,
-                    opacity: 0.6,
+                    opacity: 0.5,
                     dashArray: '3 9',
                     pane: 'routePane',
                 }).addTo(map)
             );
 
-            const labelIcon = createDistanceLabel(km, theme);
+            const labelIcon = createDistanceLabel(km);
             layersRef.current.push(
                 L.marker([midLat, midLng], { icon: labelIcon, interactive: false }).addTo(map)
             );
         }
 
+        const placeList = Array.isArray(places) ? places : [];
+        placeList.forEach((p, i) => {
+            if (!p?.coords || !Number.isFinite(p.coords[0]) || !Number.isFinite(p.coords[1])) return;
+            allPositions.push(p.coords);
+            const n = i + 1;
+            const svg = `<svg width="26" height="36" viewBox="0 0 32 44" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 0C7.163 0 0 7.163 0 16c0 12 16 28 16 28S32 28 32 16C32 7.163 24.837 0 16 0z" fill="#50C878"/>
+              <circle cx="16" cy="16" r="9" fill="#013220"/>
+              <text x="16" y="20" text-anchor="middle" font-size="10" font-weight="700" fill="#D1F2EB" font-family="system-ui">${n}</text>
+            </svg>`;
+            try {
+                layersRef.current.push(
+                    L.marker(p.coords, {
+                        icon: L.divIcon({ html: svg, className: '', iconSize: [26, 36], iconAnchor: [13, 36] }),
+                    }).bindPopup(String(p.name || '')).addTo(map)
+                );
+            } catch { /* ignore invalid marker */ }
+        });
+
         // Fly to fit all markers
-        if (allPositions.length === 1) {
+        if (focusPlaces && placeList.length > 0) {
+            try {
+                const valid = placeList.filter(p => p?.coords && Number.isFinite(p.coords[0]) && Number.isFinite(p.coords[1]));
+                if (valid.length === 1) {
+                    map.flyTo(valid[0].coords, 13, { duration: 1.2 });
+                } else if (valid.length > 1) {
+                    map.flyToBounds(L.latLngBounds(valid.map(p => p.coords)), { padding: [70, 70], maxZoom: 14, duration: 1.2 });
+                }
+            } catch { /* ignore fit bounds */ }
+        } else if (allPositions.length === 1) {
             map.flyTo(allPositions[0] as L.LatLngExpression, 7, { duration: 1.2 });
         } else if (allPositions.length > 1) {
             const bounds = L.latLngBounds(allPositions as L.LatLngExpression[]);
-            map.flyToBounds(bounds, { padding: [80, 80], duration: 1.4 });
+            map.flyToBounds(bounds, { padding: [80, 80], maxZoom: 9, duration: 1.2 });
         }
-    }, [origin, destination, stops, showDirectDistance, theme]);
+    }, [origin, destination, stops, showDirectDistance, places, focusPlaces]);
 
-    // ── Transport route overlays (flights + trains) ────────────────────────
+    // ── Transport route overlays & zoom to them ────────────────────────────
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
@@ -222,39 +250,49 @@ export default function MapBackground({
         routeLayersRef.current.forEach(l => l.remove());
         routeLayersRef.current = [];
 
-        // Flight arcs – sky-blue curved, thin line
+        const allRoutePts: L.LatLngExpression[] = [];
+
+        // Flight arcs – vibrant sky-blue curved lines
         flightPaths.forEach(path => {
-            if (path.length < 2) return;
+            if (!Array.isArray(path) || path.length < 2) return;
+            path.forEach(pt => allRoutePts.push(pt as L.LatLngExpression));
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
                     color: '#38bdf8',
-                    weight: 1,
-                    opacity: 0.65,
+                    weight: 2.5,
+                    opacity: 0.85,
                     pane: 'routePane',
                 }).addTo(map)
             );
         });
 
-        // Train routes – amber/orange thin dashed lines
+        // Train routes – emerald green dashed lines (theme color)
         trainPaths.forEach(path => {
-            if (path.length < 2) return;
+            if (!Array.isArray(path) || path.length < 2) return;
+            path.forEach(pt => allRoutePts.push(pt as L.LatLngExpression));
             routeLayersRef.current.push(
                 L.polyline(path as L.LatLngExpression[], {
-                    color: '#fb923c',
-                    weight: 1,
-                    opacity: 0.65,
-                    dashArray: '6 6',
+                    color: '#50C878',
+                    weight: 3,
+                    opacity: 0.9,
+                    dashArray: '10 5',
                     pane: 'routePane',
                 }).addTo(map)
             );
         });
-    }, [flightPaths, trainPaths]);
+
+        // Auto-zoom to the route if route paths are present (skip when focusing city places)
+        if (!focusPlaces && allRoutePts.length >= 2) {
+            const bounds = L.latLngBounds(allRoutePts);
+            map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 9, duration: 1.0 });
+        }
+    }, [flightPaths, trainPaths, focusPlaces]);
 
     return (
         <div
             ref={containerRef}
-            className="absolute inset-0 z-0"
-            style={{ background: theme === 'dark' ? '#1a1b2e' : '#dde2ea' }}
+            className="absolute inset-0 z-0 map-background"
+            style={{ background: '#0d0e1a' }}
         />
     );
 }

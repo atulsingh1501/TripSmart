@@ -115,14 +115,14 @@ export default function AuthPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <main className="container mx-auto px-4 py-10">
+      <main className="container mx-auto px-4 py-10 pt-24">
         <div className="max-w-5xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Left Side - Features */}
             <div className="hidden lg:block space-y-8">
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-teal-500">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500">
                     <Plane className="h-6 w-6 text-white" />
                   </div>
                   <span className="text-2xl font-bold">TripSmart</span>
@@ -146,10 +146,10 @@ export default function AuthPage() {
                 ))}
               </div>
 
-              <Card className="bg-gradient-to-br from-blue-50 to-teal-50 dark:from-blue-950 dark:to-teal-950 border-blue-200 dark:border-blue-800">
+              <Card className="bg-gradient-to-br from-emerald-950/40 to-teal-950/30 border-emerald-800/40">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    <Sparkles className="h-8 w-8 text-blue-600 flex-shrink-0" />
+                    <Sparkles className="h-8 w-8 text-emerald-400 flex-shrink-0" />
                     <div>
                       <h3 className="font-semibold mb-2">New User Benefit</h3>
                       <p className="text-sm text-muted-foreground">
@@ -165,7 +165,7 @@ export default function AuthPage() {
             <Card className="border-2">
               <CardHeader className="text-center pb-2">
                 <div className="flex justify-center lg:hidden mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-teal-500">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500">
                     <Plane className="h-6 w-6 text-white" />
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export default function AuthPage() {
 
                       <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-teal-500"
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-500"
                         disabled={isLoading}
                       >
                         {isLoading ? 'Signing in...' : 'Sign In'}
@@ -331,7 +331,7 @@ export default function AuthPage() {
 
                       <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-teal-500"
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-500"
                         disabled={isLoading}
                       >
                         {isLoading ? 'Creating account...' : 'Create Account'}
