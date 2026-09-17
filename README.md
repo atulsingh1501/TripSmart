@@ -1,7 +1,7 @@
 # TripSmart - Smart Trip Planning App
 
-> 🎓 **Minor Project — B.Tech 6th Semester**
-TripSmart is a full-stack trip planning application that helps users plan smarter trips within their budget. Users can input their origin, destination, travel dates, and budget to receive dynamically generated trip plans across Budget, Comfort, and Premium tiers. The app supports multi-modal transport (flights, trains, buses), displays real attraction entry fees, visualizes routes on an interactive map, and persists plans via a JWT-authenticated backend. Built as a B.Tech Minor Project using React + TypeScript, Tailwind CSS, Express.js, and MongoDB.
+> 🎓 **Minor + major Project — B.Tech 6th Semester**
+TripSmart is a full-stack trip planning application that helps users plan smarter trips within their budget. Users can input their origin, destination, travel dates, and budget to receive dynamically generated trip plans across Budget, Comfort, and Premium tiers. The app supports multi-modal transport (flights, trains, buses), displays real attraction entry fees, visualizes routes on an interactive map, and persists plans via a JWT-authenticated backend. Built as a B.Tech Minor + major Project using React + TypeScript, Tailwind CSS, Express.js, and MongoDB.
 
 ## ✨ Features
 
@@ -184,7 +184,7 @@ MIT License - See LICENSE file for details.
 
 ## 👨‍💻 Team
 
-This project was developed as a **Minor Project for B.Tech 6th Semester**.
+This project was developed as a **Minor + major Project for B.Tech 6th Semester**.
 
 | Name | GitHub |
 |------|--------|
